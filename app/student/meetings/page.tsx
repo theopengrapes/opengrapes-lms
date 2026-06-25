@@ -1,0 +1,128 @@
+import { Video } from "lucide-react";
+import { redirect } from "next/navigation";
+import { Badge } from "@/components/ui/Badge";
+import { buttonClasses } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { getSession } from "@/lib/session";
+import { getActiveStudentBatch } from "@/lib/batch";
+import { prisma } from "@/lib/prisma";
+import { formatDateTime } from "@/lib/utils";
+import { joinMeetingAction } from "@/app/actions/meeting";
+
+export default async function StudentMeetingsPage() {
+  const session = await getSession();
+  if (!session || session.user.role !== "STUDENT") redirect("/");
+  const batch = await getActiveStudentBatch(session);
+  if (!batch) redirect("/student");
+
+  // Get active live session
+  const liveSession = await prisma.liveSession.findFirst({
+    where: { batchId: batch.id, status: "live" },
+  });
+  const isTeacherJoined = liveSession?.teacherJoined ?? false;
+
+  // Find the active class meeting
+  const activeMeeting = liveSession
+    ? await prisma.meeting.findUnique({ where: { id: liveSession.roomId } })
+    : null;
+
+  // Get past meetings
+  const pastMeetings = await prisma.meeting.findMany({
+    where: {
+      batchId: batch.id,
+      status: "ENDED",
+      id: { not: liveSession?.roomId },
+    },
+    orderBy: { date: "desc" },
+  });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Meetings</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Join active live classes and check history.
+        </p>
+      </div>
+
+      {/* Active Class Section */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-slate-700">Active Session</h2>
+        {liveSession && activeMeeting ? (
+          <Card className="border-emerald-200 bg-emerald-50/30">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge color="green" className="animate-pulse">
+                    ● LIVE NOW
+                  </Badge>
+                  <h3 className="font-semibold text-slate-800">
+                    {activeMeeting.title}
+                  </h3>
+                </div>
+                {activeMeeting.description && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    {activeMeeting.description}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-slate-400">
+                  Started at {formatDateTime(liveSession.startedAt)}
+                </p>
+              </div>
+              <div className="shrink-0">
+                {isTeacherJoined ? (
+                  <form action={joinMeetingAction.bind(null, activeMeeting.id)}>
+                    <button
+                      type="submit"
+                      className={buttonClasses("primary", "sm")}
+                    >
+                      Join now
+                    </button>
+                  </form>
+                ) : (
+                  <span className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 animate-pulse">
+                    Waiting for teacher...
+                  </span>
+                )}
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card className="border-dashed border-slate-200 bg-slate-50/30 py-8 text-center text-sm text-slate-500">
+            No active class. Your teacher has not started the class yet.
+          </Card>
+        )}
+      </div>
+
+      {/* Past History */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-slate-700">Past Classes</h2>
+        {pastMeetings.length === 0 ? (
+          <EmptyState
+            icon={Video}
+            title="No past classes"
+            description="Your past ended classes will show up here."
+          />
+        ) : (
+          <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-white">
+            {pastMeetings.map((meeting) => (
+              <div
+                key={meeting.id}
+                className="flex items-center justify-between p-4"
+              >
+                <div className="space-y-1">
+                  <h4 className="font-medium text-slate-800">{meeting.title}</h4>
+                  <p className="text-xs text-slate-400">
+                    Ended on {formatDateTime(meeting.date)}
+                  </p>
+                </div>
+                <Badge color="slate">Ended</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

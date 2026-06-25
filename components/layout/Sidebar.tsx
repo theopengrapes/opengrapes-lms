@@ -1,0 +1,330 @@
+"use client";
+
+import {
+  ArrowLeft,
+  ClipboardList,
+  Grid2x2,
+  LayoutDashboard,
+  NotebookText,
+  Settings,
+  User,
+  Users,
+  Video,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { CopyJoinCode } from "@/components/ui/CopyJoinCode";
+import { cn } from "@/lib/utils";
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+}
+
+export type SidebarVariant = "admin" | "student";
+
+const BATCH_NAV_ITEMS: Record<SidebarVariant, NavItem[]> = {
+  admin: [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/students", label: "Students", icon: Users },
+    { href: "/admin/meetings", label: "Meetings", icon: Video },
+    { href: "/admin/notes", label: "Notes", icon: NotebookText },
+    { href: "/admin/tests", label: "Tests", icon: ClipboardList },
+    { href: "/admin/fees", label: "Fees", icon: Wallet },
+  ],
+  student: [
+    { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/student/meetings", label: "Meetings", icon: Video },
+    { href: "/student/notes", label: "Notes", icon: NotebookText },
+    { href: "/student/tests", label: "Tests", icon: ClipboardList },
+    { href: "/student/fees", label: "Fees", icon: Wallet },
+  ],
+};
+
+interface HubNavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const HUB_NAV: Record<SidebarVariant, HubNavGroup[]> = {
+  admin: [
+    {
+      label: "Workspace",
+      items: [
+        { href: "/admin", label: "All batches", icon: Grid2x2, exact: true },
+        { href: "/admin/fees-overview", label: "Fees overview", icon: Wallet },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { href: "#", label: "Profile", icon: User },
+        { href: "#", label: "Settings", icon: Settings },
+      ],
+    },
+  ],
+  student: [
+    {
+      label: "Learning",
+      items: [
+        { href: "/student", label: "My batches", icon: Grid2x2, exact: true },
+      ],
+    },
+    {
+      label: "Account",
+      items: [{ href: "#", label: "Profile", icon: User }],
+    },
+  ],
+};
+
+function isActive(pathname: string, item: NavItem) {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+function getInitials(name?: string | null, email?: string | null): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  if (email) return email.slice(0, 2).toUpperCase();
+  return "??";
+}
+
+export function Sidebar({
+  variant,
+  subtitle,
+  batchName,
+  joinCode,
+  userName,
+  userEmail,
+}: {
+  variant: SidebarVariant;
+  subtitle?: string;
+  batchName?: string;
+  joinCode?: string;
+  userName?: string | null;
+  userEmail?: string | null;
+}) {
+  const pathname = usePathname();
+  const hubPath = variant === "admin" ? "/admin" : "/student";
+  const isInBatch = BATCH_NAV_ITEMS[variant].some(
+    (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+  );
+  const isHub = !isInBatch;
+
+  return (
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-100 bg-white/70 backdrop-blur-sm md:flex">
+      {isHub ? (
+        <HubSidebarContent
+          variant={variant}
+          subtitle={subtitle}
+          pathname={pathname}
+          userName={userName}
+          userEmail={userEmail}
+        />
+      ) : (
+        <BatchSidebarContent
+          variant={variant}
+          hubPath={hubPath}
+          batchName={batchName}
+          joinCode={joinCode}
+          pathname={pathname}
+        />
+      )}
+    </aside>
+  );
+}
+
+function HubSidebarContent({
+  variant,
+  subtitle,
+  pathname,
+  userName,
+  userEmail,
+}: {
+  variant: SidebarVariant;
+  subtitle?: string;
+  pathname: string;
+  userName?: string | null;
+  userEmail?: string | null;
+}) {
+  const groups = HUB_NAV[variant];
+  const initials = getInitials(userName, userEmail);
+
+  return (
+    <div className="flex h-full flex-col px-5 py-6">
+      <div className="flex items-center gap-2.5">
+        <div className="flex size-9 items-center justify-center rounded-[10px] bg-gradient-to-br from-violet-600 to-violet-400 text-sm font-extrabold text-white">
+          O
+        </div>
+        <span className="text-[17px] font-extrabold text-violet-700">
+          OpenGrapes
+        </span>
+      </div>
+      {subtitle && (
+        <p className="ml-[46px] mt-[-2px] text-xs text-slate-400">
+          {subtitle}
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-1 flex-col gap-1">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <p className="mb-2 mt-3 px-3 text-[10.5px] font-bold uppercase tracking-widest text-slate-400">
+              {group.label}
+            </p>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(pathname, item);
+              return (
+                <Link
+                  key={item.href + item.label}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-violet-100 font-semibold text-violet-700"
+                      : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
+                  )}
+                >
+                  <Icon className="size-[18px]" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+
+        <div className="flex-1" />
+
+        <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-400 text-xs font-bold text-white">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-semibold text-slate-700">
+              {userName ?? "User"}
+            </p>
+            {userEmail && (
+              <p className="truncate text-[11px] text-slate-400">
+                {userEmail}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BatchSidebarContent({
+  variant,
+  hubPath,
+  batchName,
+  joinCode,
+  pathname,
+}: {
+  variant: SidebarVariant;
+  hubPath: string;
+  batchName?: string;
+  joinCode?: string;
+  pathname: string;
+}) {
+  const items = BATCH_NAV_ITEMS[variant];
+
+  return (
+    <>
+      <div className="px-6 py-6">
+        <h1 className="text-lg font-bold text-violet-700">OpenGrapes</h1>
+        <p className="text-xs text-slate-500">
+          {variant === "admin" ? "Admin panel" : "Student"}
+        </p>
+      </div>
+      {batchName && (
+        <div className="px-6 pb-3">
+          <Link
+            href={hubPath}
+            className="flex items-center gap-1 text-xs text-violet-600 hover:underline"
+          >
+            <ArrowLeft className="size-3" />
+            All batches
+          </Link>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-700">
+            {batchName}
+          </p>
+        </div>
+      )}
+      <nav className="flex-1 space-y-1 px-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "bg-violet-600 text-white shadow-sm shadow-violet-200"
+                  : "text-slate-600 hover:bg-violet-50 hover:text-violet-700"
+              )}
+            >
+              <Icon className="size-4.5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+      {joinCode && (
+        <div className="border-t border-violet-100 px-6 py-4">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+            Join code
+          </p>
+          <p className="mt-1 flex items-center gap-1 font-mono text-sm font-semibold text-black">
+            {joinCode}
+            <CopyJoinCode code={joinCode} />
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function MobileNav({ variant }: { variant: SidebarVariant }) {
+  const pathname = usePathname();
+  const hubPath = variant === "admin" ? "/admin" : "/student";
+
+  if (pathname === hubPath) return null;
+
+  const items = BATCH_NAV_ITEMS[variant];
+
+  return (
+    <nav className="flex gap-1 overflow-x-auto border-b border-violet-100 bg-white/70 px-2 py-2 backdrop-blur-sm md:hidden">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(pathname, item);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+              active
+                ? "bg-violet-600 text-white"
+                : "text-slate-600 hover:bg-violet-50"
+            )}
+          >
+            <Icon className="size-3.5" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
