@@ -57,6 +57,7 @@ model Batch {
   payments     Payment[]
   testAttempts TestAttempt[]
   liveSessions LiveSession[]
+  aiConversations AiConversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +79,7 @@ model User {
 
   enrollments Enrollment[]
   doubts       Doubt[]
+  aiConversations AiConversation[]
 
   accounts Account[]
   sessions Session[]
@@ -295,3 +297,30 @@ model MeetingMinutes {
   content      String       @db.Text
   generatedAt  DateTime     @default(now())
 }
+
+model AiConversation {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batchId   String
+  batch     Batch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  title     String
+  messages  AiMessage[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([batchId])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String         // "user" or "model"
+  content        String         @db.Text
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
+}
+

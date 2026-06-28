@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   NotebookText,
   Settings,
+  Sparkles,
   User,
   Users,
   Video,
@@ -35,6 +36,7 @@ const BATCH_NAV_ITEMS: Record<SidebarVariant, NavItem[]> = {
     { href: "/admin/notes", label: "Notes", icon: NotebookText },
     { href: "/admin/tests", label: "Tests", icon: ClipboardList },
     { href: "/admin/fees", label: "Fees", icon: Wallet },
+    { href: "/admin/ai", label: "OpenGrapes AI", icon: Sparkles },
   ],
   student: [
     { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,6 +44,7 @@ const BATCH_NAV_ITEMS: Record<SidebarVariant, NavItem[]> = {
     { href: "/student/notes", label: "Notes", icon: NotebookText },
     { href: "/student/tests", label: "Tests", icon: ClipboardList },
     { href: "/student/fees", label: "Fees", icon: Wallet },
+    { href: "/student/ai", label: "OpenGrapes AI", icon: Sparkles },
   ],
 };
 

@@ -19,10 +19,20 @@ export default async function AdminMeetingsPage() {
     where: { batchId: batch.id, status: "live" },
   });
 
+  const liveSessions = await prisma.liveSession.findMany({
+    where: {
+      roomId: { in: meetings.map((m) => m.id) }
+    },
+    include: {
+      meetingMinutes: true
+    }
+  });
+
   return (
     <MeetingsManager
       meetings={meetings}
       liveSession={liveSession}
+      liveSessions={liveSessions}
       batchId={batch.id}
     />
   );

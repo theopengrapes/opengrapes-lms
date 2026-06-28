@@ -12,7 +12,17 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDate } from "@/lib/utils";
 
-export function NotesManager({ notes }: { notes: Note[] }) {
+interface NoteDisplay {
+  id: string;
+  title: string;
+  subject: string;
+  content: string;
+  fileUrl: string | null;
+  updatedAt: Date | string;
+  isExported?: boolean;
+}
+
+export function NotesManager({ notes }: { notes: NoteDisplay[] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Note | null>(null);
   const [pending, startTransition] = useTransition();
@@ -23,7 +33,7 @@ export function NotesManager({ notes }: { notes: Note[] }) {
     setModalOpen(true);
   }
 
-  function openEdit(note: Note) {
+  function openEdit(note: any) {
     setEditing(note);
     setModalOpen(true);
   }
@@ -72,7 +82,9 @@ export function NotesManager({ notes }: { notes: Note[] }) {
               <Card key={note.id} className="flex flex-col">
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-medium text-slate-800">{note.title}</h3>
+                    <h3 className="font-medium text-slate-800 truncate max-w-[200px]" title={note.title}>
+                      {note.title}
+                    </h3>
                     <Badge color="violet">{note.subject}</Badge>
                   </div>
                   <p className="mt-2 line-clamp-3 text-sm text-slate-500">{note.content}</p>
@@ -89,14 +101,16 @@ export function NotesManager({ notes }: { notes: Note[] }) {
                   )}
                   <p className="mt-2 text-xs text-slate-400">Updated {formatDate(note.updatedAt)}</p>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => openEdit(note)}>
-                    <Pencil className="size-3.5" /> Edit
-                  </Button>
-                  <Button size="sm" variant="danger" loading={isPending} onClick={() => handleDelete(note.id)}>
-                    <Trash2 className="size-3.5" /> Delete
-                  </Button>
-                </div>
+                {!note.isExported && (
+                  <div className="mt-4 flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(note as Note)}>
+                      <Pencil className="size-3.5" /> Edit
+                    </Button>
+                    <Button size="sm" variant="danger" loading={isPending} onClick={() => handleDelete(note.id)}>
+                      <Trash2 className="size-3.5" /> Delete
+                    </Button>
+                  </div>
+                )}
               </Card>
             );
           })}

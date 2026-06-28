@@ -9,6 +9,7 @@ import { getActiveStudentBatch } from "@/lib/batch";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/utils";
 import { joinMeetingAction } from "@/app/actions/meeting";
+import { MeetingsList } from "@/components/student/MeetingsList";
 
 export default async function StudentMeetingsPage() {
   const session = await getSession();
@@ -35,6 +36,16 @@ export default async function StudentMeetingsPage() {
       id: { not: liveSession?.roomId },
     },
     orderBy: { date: "desc" },
+  });
+
+  // Get matching live sessions to check for MoM (meetingMinutes) and hasNotes
+  const liveSessions = await prisma.liveSession.findMany({
+    where: {
+      roomId: { in: pastMeetings.map((m) => m.id) }
+    },
+    include: {
+      meetingMinutes: true
+    }
   });
 
   return (
@@ -105,22 +116,7 @@ export default async function StudentMeetingsPage() {
             description="Your past ended classes will show up here."
           />
         ) : (
-          <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-white">
-            {pastMeetings.map((meeting) => (
-              <div
-                key={meeting.id}
-                className="flex items-center justify-between p-4"
-              >
-                <div className="space-y-1">
-                  <h4 className="font-medium text-slate-800">{meeting.title}</h4>
-                  <p className="text-xs text-slate-400">
-                    Ended on {formatDateTime(meeting.date)}
-                  </p>
-                </div>
-                <Badge color="slate">Ended</Badge>
-              </div>
-            ))}
-          </div>
+          <MeetingsList meetings={pastMeetings} liveSessions={liveSessions} />
         )}
       </div>
     </div>
