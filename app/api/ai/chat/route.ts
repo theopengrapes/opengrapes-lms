@@ -109,6 +109,10 @@ export async function POST(req: NextRequest) {
       }
     }
     
+    // Determine if the last message in DB history is already the current user query
+    const lastMsg = history[history.length - 1];
+    const isLastMsgSame = lastMsg && lastMsg.role === "user" && lastMsg.content === message;
+
     // Format message history for Gemini API contents parameter
     const contents = history.map((m) => {
       let contentText = m.content;
@@ -125,11 +129,13 @@ export async function POST(req: NextRequest) {
       };
     });
     
-    // Append the user's latest query text
-    contents.push({
-      role: "user",
-      parts: [{ text: queryText }],
-    });
+    // Append the user's latest query text if not already present in history
+    if (!isLastMsgSame) {
+      contents.push({
+        role: "user",
+        parts: [{ text: queryText }],
+      });
+    }
 
     // If there are images attached, convert and push to Gemini parts
     if (attachedImages && attachedImages.length > 0) {

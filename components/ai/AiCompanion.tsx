@@ -366,11 +366,21 @@ export function AiCompanion({
       let streamedResponse = "";
 
       // Replace temp user message with final messages array structures
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== "temp-user"),
-        { id: "saved-user", role: "user", content: messagePayload },
-        { id: "temp-model", role: "model", content: "" },
-      ]);
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => m.id !== "temp-user");
+        const hasSavedUserMsg = filtered.some(
+          (m) => m.role === "user" && m.content === messagePayload
+        );
+        if (hasSavedUserMsg) {
+          return [...filtered, { id: "temp-model", role: "model", content: "" }];
+        } else {
+          return [
+            ...filtered,
+            { id: "saved-user", role: "user", content: messagePayload },
+            { id: "temp-model", role: "model", content: "" },
+          ];
+        }
+      });
 
       if (reader) {
         while (!done) {
