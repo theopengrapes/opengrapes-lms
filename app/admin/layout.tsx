@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { AdminHeaderActions } from "@/components/layout/AdminHeaderActions";
 import { MobileNav, Sidebar } from "@/components/layout/Sidebar";
 import { getSession } from "@/lib/session";
@@ -8,7 +7,7 @@ import { getActiveBatch } from "@/lib/batch";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/");
 
   const batch = await getActiveBatch(session);
 
@@ -34,7 +33,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <AdminHeaderActions />
-            <SignOutButton size="sm" />
           </div>
         </header>
         <MobileNav variant="admin" />

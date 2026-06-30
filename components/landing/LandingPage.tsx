@@ -1,11 +1,12 @@
-import Link from "next/link";
+import { googleSignInAction } from "@/app/actions/auth-actions";
+import { GoogleIcon } from "@/components/auth/GoogleIcon";
 import s from "./LandingPage.module.css";
 
 export function LandingPage() {
   return (
     <div className={s.landing}>
       <div className={s.bg} />
-      {/* 
+      {/*
       <div className={`${s.blob} ${s.blobA}`} />
       <div className={`${s.blob} ${s.blobB}`} />
       */}
@@ -15,9 +16,11 @@ export function LandingPage() {
           <div className={`${s.brand} ${s.rise} ${s.d1}`}>
             <span className={s.mark}>🍇</span>OpenGrapes
           </div>
-          <Link className={`${s.navLogin} ${s.rise} ${s.d1}`} href="/login">
-            Log in
-          </Link>
+          <form action={googleSignInAction} className={`${s.rise} ${s.d1}`}>
+            <button type="submit" className={s.navLogin}>
+              Sign in
+            </button>
+          </form>
         </nav>
 
         <div className={s.htext}>
@@ -81,44 +84,21 @@ export function LandingPage() {
         <div className={s.cards}>
           <div className={`${s.cardsHead} ${s.rise} ${s.d4}`}>
             <span className={s.cardsHeadEb}>Get started</span>
-            <span className={s.cardsHeadHint}>Choose the option that fits you — it only takes a second.</span>
+            <span className={s.cardsHeadHint}>One click — sign in with Google to get started.</span>
           </div>
-          <Link
-            className={`${s.card} ${s.cViolet} ${s.heroCard} ${s.rise} ${s.d5}`}
-            href="/signup"
-          >
-            <div className={s.cardTop}>
-              <div className={s.chip}>🎓</div>
-              <span className={s.cardEyebrow}>Teacher</span>
-            </div>
-            <h3>Create a batch</h3>
-            <p>Set up your class and invite students with a code.</p>
-            <span className={s.cta}>Create a batch <span className={s.ctaAr}>→</span></span>
-          </Link>
-          <Link
-            className={`${s.card} ${s.cTeal} ${s.rise} ${s.d6}`}
-            href="/join"
-          >
-            <div className={s.cardTop}>
-              <div className={s.chip}>✲</div>
-              <span className={s.cardEyebrow}>Student</span>
-            </div>
-            <h3>Join a batch</h3>
-            <p>Enter your class code and you&apos;re in.</p>
-            <span className={s.cta}>Join with a code <span className={s.ctaAr}>→</span></span>
-          </Link>
-          <Link
-            className={`${s.card} ${s.cSlate} ${s.rise} ${s.d7}`}
-            href="/login"
-          >
-            <div className={s.cardTop}>
-              <div className={s.chip}>☺</div>
-              <span className={s.cardEyebrow}>Returning</span>
-            </div>
-            <h3>Log in</h3>
-            <p>Pick up right where you left off.</p>
-            <span className={s.cta}>Log in <span className={s.ctaAr}>→</span></span>
-          </Link>
+          <form action={googleSignInAction} className={`${s.formCard} ${s.rise} ${s.d5}`}>
+            <button type="submit" className={`${s.card} ${s.cViolet} ${s.heroCard}`}>
+              <div className={s.cardTop}>
+                <div className={s.chip}>
+                  <GoogleIcon className="size-6" />
+                </div>
+                <span className={s.cardEyebrow}>Google</span>
+              </div>
+              <h3>Sign in</h3>
+              <p>Sign in with Google, then create or join a batch in one more click.</p>
+              <span className={s.cta}>Continue with Google <span className={s.ctaAr}>→</span></span>
+            </button>
+          </form>
         </div>
       </div>
 
@@ -242,7 +222,7 @@ export function LandingPage() {
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M21.35 11.1H12v3.8h5.35c-.25 1.4-1.6 4.1-5.35 4.1-3.2 0-5.85-2.65-5.85-5.9S8.8 7.2 12 7.2c1.85 0 3.05.8 3.75 1.45l2.55-2.45C16.7 4.3 14.55 3.4 12 3.4 6.95 3.4 2.85 7.5 2.85 12.6S6.95 21.8 12 21.8c5.5 0 9.15-3.85 9.15-9.3 0-.6-.05-1-.15-1.4z" />
           </svg>
-          Every option supports Continue with Google
+          Sign in with Google — no separate signup needed
         </footer>
       </div>
     </div>

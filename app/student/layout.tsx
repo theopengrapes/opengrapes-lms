@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { MobileNav, Sidebar } from "@/components/layout/Sidebar";
 import { StudentHeaderActions } from "@/components/layout/StudentHeaderActions";
 import { getSession } from "@/lib/session";
@@ -35,7 +34,6 @@ export default async function StudentLayout({ children }: { children: ReactNode 
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <StudentHeaderActions />
-            <SignOutButton size="sm" />
           </div>
         </header>
         <MobileNav variant="student" />

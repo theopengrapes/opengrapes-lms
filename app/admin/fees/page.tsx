@@ -24,7 +24,7 @@ const STATUS_COLORS: Record<string, BadgeColor> = {
 
 export default async function AdminFeesPage() {
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/");
   const batch = await getActiveBatch(session);
   if (!batch) redirect("/admin");
 

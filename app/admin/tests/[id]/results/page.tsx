@@ -11,7 +11,7 @@ import { formatDateTime } from "@/lib/utils";
 
 export default async function AdminTestResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/");
   const batch = await getActiveBatch(session);
   if (!batch) redirect("/admin");
 

@@ -31,6 +31,7 @@ async function main() {
       password: await bcrypt.hash("Gr@pes!Own3r1", 10),
       role: Role.SUPER_ADMIN,
       status: ApprovalStatus.APPROVED,
+      onboarded: true,
     },
   });
 
@@ -41,6 +42,7 @@ async function main() {
       password: await bcrypt.hash("Gr@pes!Own3r2", 10),
       role: Role.SUPER_ADMIN,
       status: ApprovalStatus.APPROVED,
+      onboarded: true,
     },
   });
 
@@ -52,6 +54,7 @@ async function main() {
       password: await bcrypt.hash("teacher1pass", 10),
       role: Role.ADMIN,
       status: ApprovalStatus.APPROVED,
+      onboarded: true,
     },
   });
 
@@ -62,6 +65,7 @@ async function main() {
       password: await bcrypt.hash("teacher2pass", 10),
       role: Role.ADMIN,
       status: ApprovalStatus.APPROVED,
+      onboarded: true,
     },
   });
 
@@ -82,7 +86,13 @@ async function main() {
   // ── Students ────────────────────────────────────────────────────────────
   async function createStudent(email: string, name: string) {
     return prisma.user.create({
-      data: { email, name, role: Role.STUDENT, status: ApprovalStatus.APPROVED },
+      data: {
+        email,
+        name,
+        role: Role.STUDENT,
+        status: ApprovalStatus.APPROVED,
+        onboarded: true,
+      },
     });
   }
 

@@ -76,6 +76,7 @@ model User {
   role          Role           @default(STUDENT)
   status        ApprovalStatus @default(PENDING)
   plan          Plan           @default(FREE)
+  onboarded     Boolean        @default(false)
 
   enrollments Enrollment[]
   doubts       Doubt[]

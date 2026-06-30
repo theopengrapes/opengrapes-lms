@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { CopyJoinCode } from "@/components/ui/CopyJoinCode";
 import { cn } from "@/lib/utils";
 
@@ -221,6 +222,8 @@ function HubSidebarContent({
             )}
           </div>
         </div>
+
+        <SignOutButton size="sm" className="mt-2 w-full" />
       </div>
     </div>
   );

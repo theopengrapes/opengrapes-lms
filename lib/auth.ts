@@ -1,23 +1,23 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import { adminLoginSchema } from "@/lib/validations/auth";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   trustHost: true,
   pages: {
-    signIn: "/login",
+    signIn: "/",
   },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
       name: "Credentials",
@@ -47,23 +47,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  events: {
-    async createUser({ user }) {
-      const cookieStore = await cookies();
-      const intent = cookieStore.get("auth_intent")?.value;
-      cookieStore.delete("auth_intent");
-
-      if (intent === "teacher" && user.id) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { role: "ADMIN", status: "APPROVED", plan: "FREE" },
-        });
-      }
-    },
-  },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
+      // TEMP DEBUG — remove once the new-user redirect path is confirmed.
+      console.log(
+        "[onboarding-debug] signIn callback: provider=%s email=%s role=%s status=%s email_verified=%s",
+        account?.provider,
+        user.email,
+        user.role,
+        user.status,
+        profile?.email_verified
+      );
+
+      if (account?.provider === "google" && !profile?.email_verified) {
+        console.log("[onboarding-debug] signIn callback: rejected — unverified Google email");
+        return false;
+      }
       if ((user.role === "ADMIN" || user.role === "SUPER_ADMIN") && user.status !== "APPROVED") {
+        console.log("[onboarding-debug] signIn callback: rejected — admin/super-admin not approved");
         return false;
       }
       return true;

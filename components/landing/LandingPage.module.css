@@ -111,12 +111,15 @@
 }
 
 .navLogin {
+  font: inherit;
   font-size: 14.5px;
   color: var(--muted);
+  background: transparent;
   text-decoration: none;
   padding: 9px 16px;
   border: 1px solid var(--stroke);
   border-radius: 999px;
+  cursor: pointer;
   transition: 0.2s;
 }
 
@@ -345,9 +348,14 @@
 .cards {
   grid-area: cards;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: minmax(0, 360px);
+  justify-content: center;
   gap: 16px;
   padding: 22px 0 30px;
+}
+
+.formCard {
+  display: contents;
 }
 
 .cardsHead {

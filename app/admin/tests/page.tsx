@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export default async function AdminTestsPage() {
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/");
   const batch = await getActiveBatch(session);
   if (!batch) redirect("/admin");
 

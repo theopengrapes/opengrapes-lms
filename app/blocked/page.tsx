@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 export default async function BlockedPage() {
   const session = await auth();
-  if (!session) redirect("/login");
+  if (!session) redirect("/");
 
   const isPending = session.user.status === "PENDING";
 

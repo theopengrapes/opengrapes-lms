@@ -34,13 +34,15 @@ export default async function StudentHubPage() {
             Pick a class to see its meetings, notes and tests.
           </p>
         </div>
-        <Link
-          href="/join"
-          className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-300/60 transition-all hover:-translate-y-0.5 hover:bg-violet-700"
-        >
-          <Plus className="size-4" />
-          Join another batch
-        </Link>
+        {hasAny && (
+          <Link
+            href="/join"
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-300/60 transition-all hover:-translate-y-0.5 hover:bg-violet-700"
+          >
+            <Plus className="size-4" />
+            Join another batch
+          </Link>
+        )}
       </div>
 
       {!hasAny ? (
@@ -262,7 +264,7 @@ function StudentEmptyState() {
         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
       >
         <LogIn className="size-4" />
-        Join a batch
+        Join your first batch
       </Link>
     </div>
   );

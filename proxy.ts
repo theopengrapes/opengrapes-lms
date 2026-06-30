@@ -6,9 +6,14 @@ export default auth((req) => {
   const session = req.auth;
 
   if (!session) {
-    if (pathname === "/" || pathname === "/login" || pathname === "/signup" || pathname.startsWith("/join")) return NextResponse.next();
-    return NextResponse.redirect(new URL("/login", req.url));
+    if (pathname === "/" || pathname.startsWith("/join")) return NextResponse.next();
+    return NextResponse.redirect(new URL("/", req.url));
   }
+
+  // The post-login choice screen — reachable by any signed-in user,
+  // regardless of role/status. The page itself reads the `onboarded` flag
+  // from the DB and bounces away if there's nothing left to choose.
+  if (pathname === "/welcome") return NextResponse.next();
 
   const { role, status } = session.user;
 

@@ -78,8 +78,8 @@ function JoinPageInner() {
           </form>
           <p className="mt-4 text-center text-xs text-slate-400">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-violet-600 hover:underline">
-              Log in first
+            <Link href="/" className="font-medium text-violet-600 hover:underline">
+              Sign in first
             </Link>
             , then join.
           </p>

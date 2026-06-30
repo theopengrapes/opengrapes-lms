@@ -25,8 +25,32 @@ export default async function Home() {
     );
   }
 
-  if (session.user.role === "SUPER_ADMIN") redirect("/platform");
-  if (session.user.role === "ADMIN") redirect("/admin");
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { onboarded: true },
+  });
+
+  // TEMP DEBUG — remove once the new-user redirect path is confirmed.
+  console.log(
+    "[onboarding-debug] app/page.tsx: userId=%s role=%s onboarded=%s",
+    session.user.id,
+    session.user.role,
+    dbUser?.onboarded
+  );
+
+  if (dbUser && !dbUser.onboarded) {
+    console.log("[onboarding-debug] app/page.tsx: not onboarded -> redirect /welcome");
+    redirect("/welcome");
+  }
+
+  if (session.user.role === "SUPER_ADMIN") {
+    console.log("[onboarding-debug] app/page.tsx: role=SUPER_ADMIN -> redirect /platform");
+    redirect("/platform");
+  }
+  if (session.user.role === "ADMIN") {
+    console.log("[onboarding-debug] app/page.tsx: role=ADMIN -> redirect /admin");
+    redirect("/admin");
+  }
 
   const approvedCount = await prisma.enrollment.count({
     where: {
@@ -35,6 +59,12 @@ export default async function Home() {
       batch: { teacher: { status: { not: "SUSPENDED" } } },
     },
   });
+
+  console.log(
+    "[onboarding-debug] app/page.tsx: role=STUDENT approvedCount=%d -> redirect %s",
+    approvedCount,
+    approvedCount === 1 ? "/student/dashboard" : "/student"
+  );
 
   if (approvedCount === 1) redirect("/student/dashboard");
   redirect("/student");

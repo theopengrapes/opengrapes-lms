@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 
 export default async function FeesOverviewPage() {
   const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session || session.user.role !== "ADMIN") redirect("/");
 
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">

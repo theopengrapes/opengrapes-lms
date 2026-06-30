@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     return res;
   };
 
-  if (!session?.user) return go("/login");
+  if (!session?.user) return go("/");
   if (!joinCode) return go("/join");
 
   const batch = await prisma.batch.findUnique({
