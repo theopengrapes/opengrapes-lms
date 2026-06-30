@@ -23,7 +23,7 @@ export function LandingPage() {
         <div className={s.htext}>
           <span className={`${s.eyebrow} ${s.rise} ${s.d1}`}>
             <span className={s.dot} />
-            Now with live whiteboard classes
+            Now with  whiteboard classes
           </span>
           <h1 className={`${s.h1} ${s.rise} ${s.d2}`}>
             Run your classes,<br />
