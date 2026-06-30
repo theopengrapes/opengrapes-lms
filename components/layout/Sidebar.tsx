@@ -139,6 +139,8 @@ export function Sidebar({
           batchName={batchName}
           joinCode={joinCode}
           pathname={pathname}
+          userName={userName}
+          userEmail={userEmail}
         />
       )}
     </aside>
@@ -207,24 +209,42 @@ function HubSidebarContent({
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-400 text-xs font-bold text-white">
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-slate-700">
-              {userName ?? "User"}
-            </p>
-            {userEmail && (
-              <p className="truncate text-[11px] text-slate-400">
-                {userEmail}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <SignOutButton size="sm" className="mt-2 w-full" />
+        <ProfileCard userName={userName} userEmail={userEmail} showSignOut />
       </div>
+    </div>
+  );
+}
+
+function ProfileCard({
+  userName,
+  userEmail,
+  showSignOut = false,
+}: {
+  userName?: string | null;
+  userEmail?: string | null;
+  showSignOut?: boolean;
+}) {
+  const initials = getInitials(userName, userEmail);
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-400 text-xs font-bold text-white">
+          {initials}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[13px] font-semibold text-slate-700">
+            {userName ?? "User"}
+          </p>
+          {userEmail && (
+            <p className="truncate text-[11px] text-slate-400">
+              {userEmail}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {showSignOut && <SignOutButton size="sm" className="mt-2 w-full" />}
     </div>
   );
 }
@@ -235,12 +255,16 @@ function BatchSidebarContent({
   batchName,
   joinCode,
   pathname,
+  userName,
+  userEmail,
 }: {
   variant: SidebarVariant;
   hubPath: string;
   batchName?: string;
   joinCode?: string;
   pathname: string;
+  userName?: string | null;
+  userEmail?: string | null;
 }) {
   const items = BATCH_NAV_ITEMS[variant];
 
@@ -253,15 +277,15 @@ function BatchSidebarContent({
         </p>
       </div>
       {batchName && (
-        <div className="px-6 pb-3">
+        <div className="mx-3 mb-3 rounded-lg border border-violet-100 bg-violet-50 px-3 py-2">
           <Link
             href={hubPath}
-            className="flex items-center gap-1 text-xs text-violet-600 hover:underline"
+            className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-violet-500 transition-colors hover:text-violet-700"
           >
             <ArrowLeft className="size-3" />
             All batches
           </Link>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-700">
+          <p className="mt-0.5 truncate text-sm font-semibold text-slate-700">
             {batchName}
           </p>
         </div>
@@ -287,6 +311,7 @@ function BatchSidebarContent({
           );
         })}
       </nav>
+      
       {joinCode && (
         <div className="border-t border-violet-100 px-6 py-4">
           <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
@@ -298,6 +323,9 @@ function BatchSidebarContent({
           </p>
         </div>
       )}
+      <div className="border-t border-violet-100 px-3 py-4">
+        <ProfileCard userName={userName} userEmail={userEmail} />
+      </div>
     </>
   );
 }
