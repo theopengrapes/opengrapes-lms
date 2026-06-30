@@ -324,11 +324,18 @@ export function AiCompanion({
       
       setMessages((prev) => {
         const filtered = prev.filter((m) => m.id !== "temp-user");
-        return [
-          ...filtered,
-          { id: "saved-user", role: "user", content: messagePayload },
-          { id: "temp-model", role: "model", content: "" },
-        ];
+        const hasSavedUserMsg = filtered.some(
+          (m) => m.role === "user" && m.content === messagePayload
+        );
+        if (hasSavedUserMsg) {
+          return [...filtered, { id: "temp-model", role: "model", content: "" }];
+        } else {
+          return [
+            ...filtered,
+            { id: "saved-user", role: "user", content: messagePayload },
+            { id: "temp-model", role: "model", content: "" },
+          ];
+        }
       });
 
       // 3. Create conversation thread if not already active
