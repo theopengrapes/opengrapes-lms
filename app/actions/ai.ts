@@ -2,6 +2,7 @@
 
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { requestAI } from "@/lib/ai-provider";
 
 /**
  * Fetch all AI conversations for a user in a specific batch
@@ -41,46 +42,33 @@ export async function createConversationAction(batchId: string, firstMessage: st
     }
   } catch (e) {}
 
-  // Generate a short 3-4 word title using Gemini
+  // Generate a short 3-4 word title using unified AI provider (will route to DeepSeek text-only)
   let title = "New Chat";
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (apiKey) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+  try {
+    const res = await requestAI({
+      contents: [
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `Summarize the following student/teacher query into a short, descriptive 3 to 4 word title for a chat sidebar. Return ONLY the title text, with no quotes, no markdown, and no extra text. Query: "${queryText}"`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              maxOutputTokens: 10,
+          parts: [
+            {
+              text: `Summarize the following student/teacher query into a short, descriptive 3 to 4 word title for a chat sidebar. Return ONLY the title text, with no quotes, no markdown, and no extra text. Query: "${queryText}"`,
             },
-          }),
-        }
-      );
+          ],
+        },
+      ],
+      generationConfig: {
+        maxOutputTokens: 10,
+      },
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        const cleanText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (cleanText) {
-          title = cleanText.replace(/['"]+/g, ""); // strip quotes
-        }
+    if (res.ok) {
+      const data = await res.json() as any;
+      const cleanText = data.choices?.[0]?.message?.content?.trim();
+      if (cleanText) {
+        title = cleanText.replace(/['"]+/g, ""); // strip quotes
       }
-    } catch (e) {
-      console.error("[AI Action] Failed to generate chat title:", e);
     }
+  } catch (e) {
+    console.error("[AI Action] Failed to generate chat title:", e);
   }
 
   // Create the conversation and insert the user's first message
