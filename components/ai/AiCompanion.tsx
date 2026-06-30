@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import MarkdownRenderer from "./MarkdownRenderer";
 import {
   Sparkles,
   MessageSquare,
@@ -10,6 +11,7 @@ import {
   BookOpen,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Clock,
   Bot,
   User,
@@ -21,6 +23,7 @@ import {
   Maximize2,
   FileSpreadsheet,
   Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -59,6 +62,7 @@ export function AiCompanion({
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [enableThinking, setEnableThinking] = useState(true);
   const [activeTab, setActiveTab] = useState<"notes" | "summaries" | "doubts">(
     variant === "admin" ? "notes" : "notes"
   );
@@ -77,6 +81,11 @@ export function AiCompanion({
 
   // Lightbox Modal Image State
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null);
+
+  // Claude-style persistent thinking accordion & layout states
+  const [localThinking, setLocalThinking] = useState<Record<string, string>>({});
+  const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
+  const [activeThinkingExpanded, setActiveThinkingExpanded] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -121,21 +130,35 @@ export function AiCompanion({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load message history
+  // Load message history when switching conversations
+  // Do NOT include isStreaming in deps — that causes a re-fetch that clears localThinking
+  const prevConvIdRef = React.useRef<string | null>(null);
   useEffect(() => {
-    if (activeConvId) {
+    if (activeConvId && !isStreaming) {
+      // Only clear thinking state when switching to a DIFFERENT conversation
+      const isNewConv = prevConvIdRef.current !== activeConvId;
+      prevConvIdRef.current = activeConvId;
+
       const loadMessages = async () => {
         try {
           const fetchedMessages = await getMessagesAction(activeConvId);
           setMessages(fetchedMessages);
+          if (isNewConv) {
+            setLocalThinking({});
+            setExpandedThinking({});
+          }
         } catch (e) {
           console.error("Failed to load messages:", e);
         }
       };
       loadMessages();
-    } else {
+    } else if (!activeConvId) {
       setMessages([]);
+      setLocalThinking({});
+      setExpandedThinking({});
+      prevConvIdRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConvId]);
 
   // Helper to convert base64 dataURL to Blob for R2 uploads
@@ -151,43 +174,7 @@ export function AiCompanion({
     return new Blob([u8arr], { type: mime });
   };
 
-  // Helper to parse basic markdown bold (**text**) and bullet lists
-  const renderFormattedAnswer = (text: string) => {
-    if (!text) return null;
-    const lines = text.split("\n");
-    return lines.map((line, lineIdx) => {
-      const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
-
-      const parseBold = (str: string) => {
-        const parts = str.split(/\*\*([^*]+)\*\*/g);
-        return parts.map((part, idx) => {
-          if (idx % 2 === 1) {
-            return (
-              <strong key={idx} className="font-bold text-slate-900">
-                {part}
-              </strong>
-            );
-          }
-          return part;
-        });
-      };
-
-      if (bulletMatch) {
-        return (
-          <div key={lineIdx} className="flex items-start gap-1.5 ml-2 my-1">
-            <span className="text-violet-500 mt-1 select-none">•</span>
-            <span className="flex-1 text-slate-700">{parseBold(bulletMatch[1])}</span>
-          </div>
-        );
-      }
-
-      return (
-        <div key={lineIdx} className={line.trim() === "" ? "h-2" : "my-0.5 text-slate-700"}>
-          {parseBold(line)}
-        </div>
-      );
-    });
-  };
+  // renderFormattedAnswer was replaced with MarkdownRenderer component
 
   // Handle Ctrl+V paste from clipboard
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -331,19 +318,27 @@ export function AiCompanion({
         images: uploadedImageUrls,
       });
 
+      // Display the user message and an empty AI response instantly to give immediate feedback
+      setIsStreaming(true);
+      setActiveThinkingExpanded(true);
+      
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => m.id !== "temp-user");
+        return [
+          ...filtered,
+          { id: "saved-user", role: "user", content: messagePayload },
+          { id: "temp-model", role: "model", content: "" },
+        ];
+      });
+
       // 3. Create conversation thread if not already active
       if (!currentConvId) {
-        // Render user message instantly in client
-        setMessages([{ id: "temp-user", role: "user", content: messagePayload }]);
-
         const newId = await createConversationAction(batchId, messagePayload);
         currentConvId = newId;
         setActiveConvId(newId);
 
         const refreshedConvs = await getConversationsAction(batchId);
         setConversations(refreshedConvs);
-      } else {
-        setMessages((prev) => [...prev, { id: "temp-user", role: "user", content: messagePayload }]);
       }
 
       // 4. Hit streaming Route Handler
@@ -353,6 +348,7 @@ export function AiCompanion({
         body: JSON.stringify({
           conversationId: currentConvId,
           message: messagePayload,
+          enableThinking,
         }),
       });
 
@@ -364,23 +360,7 @@ export function AiCompanion({
       const decoder = new TextDecoder();
       let done = false;
       let streamedResponse = "";
-
-      // Replace temp user message with final messages array structures
-      setMessages((prev) => {
-        const filtered = prev.filter((m) => m.id !== "temp-user");
-        const hasSavedUserMsg = filtered.some(
-          (m) => m.role === "user" && m.content === messagePayload
-        );
-        if (hasSavedUserMsg) {
-          return [...filtered, { id: "temp-model", role: "model", content: "" }];
-        } else {
-          return [
-            ...filtered,
-            { id: "saved-user", role: "user", content: messagePayload },
-            { id: "temp-model", role: "model", content: "" },
-          ];
-        }
-      });
+      let hasCollapsedThinking = false;
 
       if (reader) {
         while (!done) {
@@ -389,6 +369,13 @@ export function AiCompanion({
           if (value) {
             const chunk = decoder.decode(value, { stream: !done });
             streamedResponse += chunk;
+            
+            // Auto-collapse thinking when </think> is received
+            if (!hasCollapsedThinking && streamedResponse.indexOf("</think>") !== -1) {
+              hasCollapsedThinking = true;
+              setActiveThinkingExpanded(false);
+            }
+
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === "temp-model" ? { ...msg, content: streamedResponse } : msg
@@ -400,6 +387,24 @@ export function AiCompanion({
 
       // Sync finalized message IDs from database
       const finalMessages = await getMessagesAction(currentConvId);
+
+      let finishedStreamedThinking = "";
+      const thinkStart = streamedResponse.indexOf("<think>");
+      const thinkEnd = streamedResponse.indexOf("</think>");
+      if (thinkStart !== -1) {
+        if (thinkEnd !== -1) {
+          finishedStreamedThinking = streamedResponse.substring(thinkStart + 7, thinkEnd).trim();
+        } else {
+          finishedStreamedThinking = streamedResponse.substring(thinkStart + 7).trim();
+        }
+      }
+
+      if (finishedStreamedThinking) {
+        const lastModelMessage = finalMessages[finalMessages.length - 1];
+        if (lastModelMessage) {
+          setLocalThinking(prev => ({ ...prev, [lastModelMessage.id]: finishedStreamedThinking }));
+        }
+      }
       setMessages(finalMessages);
 
       // Refresh sidebar list
@@ -420,29 +425,51 @@ export function AiCompanion({
     }
   };
 
-  // Helper to check and render message bubbles
-  const renderMessageBubble = (m: any) => {
+  const getStreamingPhase = (text: string) => {
+    if (!text) return 'context';
+    const thinkStart = text.indexOf("<think>");
+    const thinkEnd = text.indexOf("</think>");
+    if (thinkStart !== -1 && thinkEnd === -1) {
+      return 'thinking';
+    }
+    return 'answering';
+  };
+
+  // Helper to render message in Claude-style (right-aligned user bubble, float images, AI directly on bg)
+  const renderMessage = (m: any, idx: number) => {
     const isUser = m.role === "user";
 
-    // Handle Option A - JSON string parsing
-    if (isUser && m.content.startsWith("{")) {
-      try {
-        const { text, attachments, image, images } = JSON.parse(m.content);
-        const imgs = images || (image ? [image] : []);
-        return (
-          <div className="space-y-2">
+    if (isUser) {
+      let text = m.content;
+      let attachments: any[] = [];
+      let imgs: string[] = [];
+
+      if (m.content.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(m.content);
+          text = parsed.text || m.content;
+          attachments = parsed.attachments || [];
+          imgs = parsed.images || (parsed.image ? [parsed.image] : []);
+        } catch (e) {
+          // fallback
+        }
+      }
+
+      return (
+        <div key={m.id || idx} className="flex justify-end w-full">
+          <div className="flex flex-col items-end space-y-1.5 max-w-[85%] ml-auto">
             {/* Visual Context Attachments */}
             {attachments && attachments.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pb-1">
-                {attachments.map((att: any, idx: number) => {
+              <div className="flex flex-wrap gap-1.5 justify-end">
+                {attachments.map((att: any, attIdx: number) => {
                   let Icon = FileText;
                   if (att.type === "doubt") Icon = Clock;
                   if (att.type === "summary") Icon = HelpCircle;
 
                   return (
                     <div
-                      key={idx}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-violet-100 bg-white/95 text-[10px] font-medium text-violet-800 shadow-sm"
+                      key={attIdx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-violet-100 bg-white/95 text-[10px] font-medium text-violet-800 shadow-xs"
                     >
                       <Icon className="size-3 text-violet-500 shrink-0" />
                       <span className="max-w-[120px] truncate">{att.title}</span>
@@ -452,42 +479,125 @@ export function AiCompanion({
               </div>
             )}
 
-            {/* Attached Images Grid */}
+            {/* Attached Images Grid (above bubble) */}
             {imgs && imgs.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-1.5">
-                {imgs.map((imgUrl: string, idx: number) => (
+              <div className="flex flex-wrap gap-2 justify-end mb-1">
+                {imgs.map((imgUrl: string, imgIdx: number) => (
                   <div
-                    key={idx}
+                    key={imgIdx}
                     onClick={() => setSelectedLightboxImage(imgUrl)}
-                    className="relative group w-36 aspect-video rounded-lg overflow-hidden border border-white/40 cursor-pointer shadow-md"
+                    className="relative group w-36 aspect-video rounded-xl overflow-hidden border border-slate-200 cursor-pointer shadow-md"
                   >
                     <img
                       src={imgUrl}
-                      alt={`Student Upload ${idx + 1}`}
+                      alt={`Student Upload ${imgIdx + 1}`}
                       className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <Maximize2 className="w-4 h-4 text-white" />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Maximize2 className="size-4 text-white" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Message query text */}
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">{text}</div>
+            {/* User message bubble */}
+            <div className="px-4 py-2.5 bg-slate-100 border border-slate-200/50 rounded-2xl rounded-tr-none text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
+              {text}
+            </div>
           </div>
-        );
-      } catch (e) {
-        // Fallback to plain text if JSON parsing fails
-      }
-    }
+        </div>
+      );
+    } else {
+      // AI Message
+      const isTemp = m.id === "temp-model";
+      const phase = isTemp ? getStreamingPhase(m.content) : 'idle';
+      
+      let thinkingText = "";
+      let answerText = m.content;
 
-    return (
-      <div className="text-sm leading-relaxed space-y-1">
-        {isUser ? m.content : renderFormattedAnswer(m.content)}
-      </div>
-    );
+      // Extract thinking and answer text
+      if (isTemp) {
+        const thinkStart = m.content.indexOf("<think>");
+        const thinkEnd = m.content.indexOf("</think>");
+
+        if (thinkStart !== -1) {
+          if (thinkEnd !== -1) {
+            thinkingText = m.content.substring(thinkStart + 7, thinkEnd).trim();
+            answerText = m.content.substring(0, thinkStart) + m.content.substring(thinkEnd + 8);
+          } else {
+            thinkingText = m.content.substring(thinkStart + 7).trim();
+            answerText = m.content.substring(0, thinkStart);
+          }
+        }
+      } else {
+        thinkingText = localThinking[m.id] || "";
+      }
+
+      const hasThinking = !!thinkingText;
+      const isThinkingOpen = isTemp ? activeThinkingExpanded : !!expandedThinking[m.id];
+
+      return (
+        <div key={m.id || idx} className="flex justify-start w-full">
+          <div className="space-y-2.5 w-full text-slate-700 pl-2">
+            {/* Header metadata */}
+            <div className="flex items-center justify-between text-[9px] text-slate-400">
+              <span className="font-bold text-violet-700 tracking-wider">OPENGRAPES AI</span>
+              {m.createdAt && (
+                <span>
+                  {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </div>
+
+            {/* Stage Placeholder (Streaming only, on top) */}
+            {isTemp && (phase === 'context' || phase === 'thinking') && (
+              <div className="flex items-center gap-2 py-1 text-xs text-violet-650 font-medium italic animate-pulse">
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>
+                  {phase === 'context' ? 'Reading classroom context...' : 'Thinking deeply...'}
+                </span>
+              </div>
+            )}
+
+            {/* Collapsible Thought Process */}
+            {hasThinking && (
+              <div className="my-2 p-2 bg-violet-50/50 border border-violet-100/50 rounded-xl">
+                <button
+                  onClick={() => {
+                    if (isTemp) {
+                      setActiveThinkingExpanded(!activeThinkingExpanded);
+                    } else {
+                      setExpandedThinking(prev => ({ ...prev, [m.id]: !prev[m.id] }));
+                    }
+                  }}
+                  className="flex items-center gap-1 text-[9px] font-bold text-violet-750 hover:text-violet-850 transition-colors select-none"
+                >
+                  {isThinkingOpen ? (
+                    <ChevronDown className="size-3.5" />
+                  ) : (
+                    <ChevronRight className="size-3.5" />
+                  )}
+                  <span>THOUGHT PROCESS</span>
+                </button>
+                {isThinkingOpen && (
+                  <div className="mt-2 pl-3 border-l border-violet-100 text-[10px] text-slate-500 font-mono">
+                    <MarkdownRenderer content={thinkingText} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Answer solution text */}
+            {(!isTemp || answerText.trim()) && (
+              <div className="text-slate-755 text-xs leading-relaxed">
+                <MarkdownRenderer content={answerText} />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -621,35 +731,8 @@ export function AiCompanion({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {messages.map((m, idx) => {
-                const isUser = m.role === "user";
-                return (
-                  <div key={m.id || idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-                    <div className={`flex gap-3 max-w-[85%] ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-                      {/* Avatar */}
-                      <div
-                        className={`size-8 rounded-full shrink-0 flex items-center justify-center text-xs font-semibold ${
-                          isUser ? "bg-violet-600 text-white" : "bg-violet-50 text-violet-600 border border-violet-100"
-                        }`}
-                      >
-                        {isUser ? <User className="size-4" /> : <Bot className="size-4" />}
-                      </div>
-
-                      {/* Message bubble */}
-                      <div
-                        className={`rounded-2xl p-4 shadow-sm ${
-                          isUser
-                            ? "bg-violet-600 text-white rounded-tr-none"
-                            : "bg-white border border-violet-50 text-slate-800 rounded-tl-none"
-                        }`}
-                      >
-                        {renderMessageBubble(m)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="space-y-6">
+              {messages.map((m, idx) => renderMessage(m, idx))}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -710,6 +793,22 @@ export function AiCompanion({
               ))}
             </div>
           )}
+
+          {/* Thinking Mode Toggle Switch */}
+          <div className="flex justify-end pb-2">
+            <label className="relative inline-flex items-center cursor-pointer select-none text-[10px] font-semibold text-slate-500 hover:text-violet-600 transition-colors gap-1.5">
+              <span>Thinking Mode</span>
+              <div className="relative">
+                <input 
+                  type="checkbox" 
+                  checked={enableThinking} 
+                  onChange={(e) => setEnableThinking(e.target.checked)} 
+                  className="sr-only peer" 
+                />
+                <div className="w-7 h-4 bg-slate-200/80 rounded-full peer peer-checked:bg-violet-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+              </div>
+            </label>
+          </div>
 
           {/* Prompt field */}
           <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
@@ -968,24 +1067,40 @@ export function AiCompanion({
                             </div>
                             
                             {/* Display image thumbnail if doubt has screenshot */}
-                            {d.screenshot && (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation(); // prevent collapsing the card
-                                  setSelectedLightboxImage(d.screenshot);
-                                }}
-                                className="relative group w-full aspect-video rounded-lg overflow-hidden border border-slate-200 cursor-pointer shadow-xs"
-                              >
-                                <img
-                                  src={d.screenshot}
-                                  alt="Doubt screenshot"
-                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                  <Maximize2 className="size-3 text-white" />
+                            {d.screenshot && (() => {
+                              let imageUrl = '';
+                              try {
+                                if (d.screenshot.startsWith('[')) {
+                                  const parsed = JSON.parse(d.screenshot);
+                                  imageUrl = parsed[0] || '';
+                                } else {
+                                  imageUrl = d.screenshot;
+                                }
+                              } catch (e) {
+                                imageUrl = d.screenshot;
+                              }
+
+                              if (!imageUrl) return null;
+
+                              return (
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // prevent collapsing the card
+                                    setSelectedLightboxImage(imageUrl);
+                                  }}
+                                  className="relative group w-full aspect-video rounded-lg overflow-hidden border border-slate-200 cursor-pointer shadow-xs"
+                                >
+                                  <img
+                                    src={imageUrl}
+                                    alt="Doubt screenshot"
+                                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                  />
+                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <Maximize2 className="size-3 text-white" />
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

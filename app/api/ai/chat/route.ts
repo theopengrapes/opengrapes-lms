@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { requestAI } from "@/lib/ai-provider";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { conversationId, message } = await req.json();
+    const { conversationId, message, enableThinking } = await req.json();
     if (!conversationId || !message) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
@@ -140,35 +141,28 @@ export async function POST(req: NextRequest) {
     // If there are images attached, convert and push to Gemini parts
     if (attachedImages && attachedImages.length > 0) {
       for (const attachedImage of attachedImages) {
-        let mimeType = "";
-        let base64Data = "";
-
         if (attachedImage.startsWith("data:")) {
-          const matches = attachedImage.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
-          if (matches && matches.length === 3) {
-            mimeType = matches[1];
-            base64Data = matches[2];
+          const commaIndex = attachedImage.indexOf(",");
+          if (commaIndex !== -1) {
+            const meta = attachedImage.substring(0, commaIndex);
+            const mimeMatch = meta.match(/data:(.*?);/);
+            const base64Data = attachedImage.substring(commaIndex + 1);
+            if (mimeMatch && base64Data) {
+              contents[contents.length - 1].parts.push({
+                inlineData: {
+                  mimeType: mimeMatch[1],
+                  data: base64Data,
+                },
+              } as any);
+            }
           }
         } else if (attachedImage.startsWith("http://") || attachedImage.startsWith("https://")) {
-          try {
-            const imgRes = await fetch(attachedImage);
-            if (imgRes.ok) {
-              mimeType = imgRes.headers.get("content-type") || "image/jpeg";
-              const arrayBuffer = await imgRes.arrayBuffer();
-              base64Data = Buffer.from(arrayBuffer).toString("base64");
-            } else {
-              console.error("[AI Chat API] Failed to fetch attached image:", attachedImage, imgRes.statusText);
-            }
-          } catch (fetchErr) {
-            console.error("[AI Chat API] Error fetching attached image:", fetchErr);
-          }
-        }
-
-        if (mimeType && base64Data) {
+          const ext = attachedImage.split(".").pop()?.toLowerCase();
+          const mimeType = ext === "png" ? "image/png" : "image/jpeg";
           contents[contents.length - 1].parts.push({
-            inlineData: {
+            fileData: {
+              fileUri: attachedImage,
               mimeType: mimeType,
-              data: base64Data,
             },
           } as any);
         }
@@ -197,31 +191,27 @@ INSTRUCTIONS:
 2. If direct user attachments are provided above, focus heavily on them when answering.
 3. If the user asks something not directly present in the context, synthesize the answer using your general knowledge, but prioritize the classroom content.
 4. Be encouraging, clear, and structured. Use **bold** for key terms and bullet points for lists.
-5. Format math using standard LaTeX format (use $...$ for inline math and $$...$$ for block display equations).`;
+5. FORMAT MATH & BOXED ANSWERS: Format all equations, formulas, math symbols, variables, and expressions in standard LaTeX format. Use $...$ for inline math (e.g., $e = mc^2$) and $$...$$ for display/block equations. If you highlight a final numerical or variable answer, ALWAYS wrap it in \\boxed{...} inside $ or $$, e.g., $\\boxed{13}$ or $$\\boxed{x = \\frac{-b \\pm \\sqrt{d}}{2a}}$$. NEVER output raw \\boxed without $ or $$ wrappers.
+6. FORMAT CHEMISTRY: Always wrap chemical formulas and equations in LaTeX math mode using \\ce{...} with curly braces inside $ or $$, e.g., $\\ce{2H2 + O2 -> 2H2O}$ or $\\ce{H2SO4}$. NEVER output raw \\ce without braces, and NEVER output raw \\ce without $ or $$ delimiters.
+7. Avoid writing raw math or chemical symbols as plain text without $ or $$ wrappers.`;
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "Gemini API key is not configured" }, { status: 500 });
+    let response;
+    try {
+      response = await requestAI({
+        contents,
+        systemInstruction: {
+          parts: [{ text: systemInstruction }],
+        },
+        enableThinking: enableThinking !== undefined ? enableThinking : true
+      }, { stream: true });
+    } catch (err: any) {
+      console.error("[AI Chat API] AI call failed:", err.message);
+      return NextResponse.json({ error: "Failed to connect to AI engine" }, { status: 502 });
     }
-
-    // Call Gemini streaming API (using low-latency gemini-2.5-flash-lite)
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse&key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
-          },
-        }),
-      }
-    );
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("[AI Chat API] Gemini returned error:", errText);
+      console.error("[AI Chat API] AI returned error:", errText);
       return NextResponse.json({ error: "Failed to connect to AI engine" }, { status: 502 });
     }
 
@@ -233,6 +223,7 @@ INSTRUCTIONS:
         let done = false;
         let buffer = "";
         let fullAnswer = "";
+        let isThinking = false;
 
         if (!reader) {
           controller.close();
@@ -255,10 +246,23 @@ INSTRUCTIONS:
                     const jsonStr = line.slice(6).trim();
                     if (jsonStr === "[DONE]") continue;
                     const parsed = JSON.parse(jsonStr);
-                    const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (chunkText) {
-                      fullAnswer += chunkText;
-                      controller.enqueue(new TextEncoder().encode(chunkText));
+                    const reasoning = parsed.choices?.[0]?.delta?.reasoning_content;
+                    const content = parsed.choices?.[0]?.delta?.content;
+
+                    if (reasoning) {
+                      if (!isThinking) {
+                        isThinking = true;
+                        controller.enqueue(new TextEncoder().encode("<think>"));
+                      }
+                      controller.enqueue(new TextEncoder().encode(reasoning));
+                    }
+                    if (content) {
+                      if (isThinking) {
+                        isThinking = false;
+                        controller.enqueue(new TextEncoder().encode("</think>\n\n"));
+                      }
+                      fullAnswer += content;
+                      controller.enqueue(new TextEncoder().encode(content));
                     }
                   } catch (parseErr) {
                     // Ignore partial JSON parsing errors
@@ -273,18 +277,34 @@ INSTRUCTIONS:
             try {
               const jsonStr = buffer.slice(6).trim();
               const parsed = JSON.parse(jsonStr);
-              const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (chunkText) {
-                fullAnswer += chunkText;
-                controller.enqueue(new TextEncoder().encode(chunkText));
+              const reasoning = parsed.choices?.[0]?.delta?.reasoning_content;
+              const content = parsed.choices?.[0]?.delta?.content;
+
+              if (reasoning) {
+                if (!isThinking) {
+                  isThinking = true;
+                  controller.enqueue(new TextEncoder().encode("<think>"));
+                }
+                controller.enqueue(new TextEncoder().encode(reasoning));
+              }
+              if (content) {
+                if (isThinking) {
+                  isThinking = false;
+                  controller.enqueue(new TextEncoder().encode("</think>\n\n"));
+                }
+                fullAnswer += content;
+                controller.enqueue(new TextEncoder().encode(content));
               }
             } catch (e) {}
           }
 
+          if (isThinking) {
+            controller.enqueue(new TextEncoder().encode("</think>"));
+          }
+
           // 4. Stream finished. Save the user query and the full model answer to database
           // Check if user query was already saved (to avoid duplicates for the first message)
-          const lastMsg = history[history.length - 1];
-          const shouldSaveUserMsg = !lastMsg || lastMsg.content !== message;
+          const shouldSaveUserMsg = !history.some((m) => m.role === "user" && m.content === message);
 
           if (shouldSaveUserMsg) {
             await prisma.aiMessage.create({
