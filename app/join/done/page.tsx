@@ -1,5 +1,4 @@
 import { CheckCircle2 } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -22,9 +21,9 @@ export default async function JoinDonePage({
         <p className="mt-2 text-sm text-slate-500">
           Request sent — {batch}. Your teacher will approve you shortly.
         </p>
-        <Link href="/student" className={buttonClasses("primary", "md", "mt-6 inline-flex")}>
+        <a href="/student" className={buttonClasses("primary", "md", "mt-6 inline-flex")}>
           Go to my batches
-        </Link>
+        </a>
       </Card>
     </main>
   );

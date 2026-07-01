@@ -12,7 +12,7 @@ import {
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Field";
+import { JoinCodeInput } from "@/components/ui/JoinCodeInput";
 
 const ERROR_MESSAGES: Record<string, string> = {
   unavailable: "This class isn't accepting students right now.",
@@ -45,9 +45,9 @@ function JoinPageInner() {
           </div>
           <h1 className="text-xl font-semibold text-slate-800">You&apos;re in!</h1>
           <p className="mt-2 text-sm text-slate-500">{state.success}</p>
-          <Link href="/student" className={buttonClasses("primary", "md", "mt-6 inline-flex")}>
+          <a href="/student" className={buttonClasses("primary", "md", "mt-6 inline-flex")}>
             Go to my batches
-          </Link>
+          </a>
         </Card>
       </main>
     );
@@ -104,7 +104,7 @@ function JoinPageInner() {
 
         <form action={formAction} className="mt-6 space-y-4">
           <div>
-            <Input
+            <JoinCodeInput
               name="joinCode"
               placeholder="e.g. ABCD-1234"
               required

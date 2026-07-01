@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { signIn, auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -98,6 +99,8 @@ async function enrollStudent(
   await prisma.enrollment.create({
     data: { studentId, batchId, status: "PENDING" },
   });
+
+  revalidatePath("/student");
 
   return {
     phase: "done",

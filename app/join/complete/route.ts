@@ -37,5 +37,5 @@ export async function GET(request: Request) {
     update: {},
   });
 
-  return go(`/join/done?batch=${encodeURIComponent(batch.name)}`);
+  return go(`/student?joined=${encodeURIComponent(batch.name)}`);
 }

@@ -4,26 +4,36 @@ import {
   CircleCheck,
   Clock,
   GraduationCap,
-  LogIn,
-  Plus,
+  X,
 } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { setActiveBatchAction } from "@/app/student/actions";
+import { setActiveBatchAction, cancelEnrollmentAction } from "@/app/student/actions";
 import { getSession } from "@/lib/session";
 import { getStudentHubData } from "@/lib/batch";
 import type { StudentHubBatch, StudentHubPending } from "@/lib/batch";
+import {
+  JoinBatchTrigger,
+  JoinSuccessModal,
+} from "@/components/join/JoinBatchTrigger";
 
-export default async function StudentHubPage() {
+export default async function StudentHubPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ joined?: string }>;
+}) {
   const session = await getSession();
   if (!session || session.user.role !== "STUDENT") redirect("/");
 
-  const { approved, pending, stats } = await getStudentHubData(session);
+  const [{ approved, pending, stats }, { joined }] = await Promise.all([
+    getStudentHubData(session),
+    searchParams,
+  ]);
 
   const hasAny = approved.length > 0 || pending.length > 0;
 
   return (
     <div>
+      {joined && <JoinSuccessModal batchName={joined} />}
       {/* Hero */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -34,15 +44,7 @@ export default async function StudentHubPage() {
             Pick a class to see its meetings, notes and tests.
           </p>
         </div>
-        {hasAny && (
-          <Link
-            href="/join"
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-300/60 transition-all hover:-translate-y-0.5 hover:bg-violet-700"
-          >
-            <Plus className="size-4" />
-            Join another batch
-          </Link>
-        )}
+        {hasAny && <JoinBatchTrigger variant="top-button" />}
       </div>
 
       {!hasAny ? (
@@ -91,20 +93,7 @@ export default async function StudentHubPage() {
             {pending.map((p) => (
               <PendingBatchCard key={p.enrollmentId} batch={p} />
             ))}
-            <Link
-              href="/join"
-              className="flex min-h-42 flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50/60 p-5 text-center transition-all hover:-translate-y-0.5 hover:border-violet-400 hover:bg-white"
-            >
-              <div className="flex size-10 items-center justify-center rounded-xl border border-violet-200 bg-white text-2xl font-light text-violet-600">
-                +
-              </div>
-              <span className="text-sm font-semibold text-violet-700">
-                Join another batch
-              </span>
-              <span className="max-w-42.5 text-xs text-slate-500">
-                Got a code from your teacher? Enter it here
-              </span>
-            </Link>
+            <JoinBatchTrigger variant="card" />
           </div>
         </>
       )}
@@ -168,15 +157,26 @@ function ApprovedBatchCard({ batch }: { batch: StudentHubBatch }) {
 function PendingBatchCard({ batch }: { batch: StudentHubPending }) {
   return (
     <div className="flex min-h-42 flex-col rounded-2xl border border-white/60 bg-white/80 p-4.5 shadow-sm shadow-violet-100/60 backdrop-blur-sm">
-      {/* Top row: icon + waiting badge */}
-      <div className="flex items-start gap-2.5">
-        <div className="flex size-11.5 shrink-0 items-center justify-center rounded-[13px] bg-amber-100 text-amber-600">
-          <Clock className="size-6" />
+      {/* Top row: icon + waiting badge + cancel */}
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="flex items-start gap-2.5">
+          <div className="flex size-11.5 shrink-0 items-center justify-center rounded-[13px] bg-amber-100 text-amber-600">
+            <Clock className="size-6" />
+          </div>
+          <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+            <span className="inline-block size-1.5 rounded-full bg-amber-500" />
+            Waiting
+          </span>
         </div>
-        <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-          <span className="inline-block size-1.5 rounded-full bg-amber-500" />
-          Waiting
-        </span>
+        <form action={cancelEnrollmentAction.bind(null, batch.enrollmentId)}>
+          <button
+            type="submit"
+            title="Cancel request"
+            className="flex size-7.5 items-center justify-center rounded-[9px] border border-red-100 bg-red-50/60 text-red-400 transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-600 cursor-pointer"
+          >
+            <X className="size-3.5" />
+          </button>
+        </form>
       </div>
 
       {/* Name + grade */}
@@ -259,13 +259,7 @@ function StudentEmptyState() {
         Enter a join code from your teacher to start accessing meetings, notes,
         and tests.
       </p>
-      <Link
-        href="/join"
-        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
-      >
-        <LogIn className="size-4" />
-        Join your first batch
-      </Link>
+      <JoinBatchTrigger variant="empty-state" />
     </div>
   );
 }
