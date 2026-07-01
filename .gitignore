@@ -51,3 +51,7 @@ next-env.d.ts
 /dev.db
 *.db
 *.db-journal
+
+# Graphify outputs
+graphify-out/
+.graphify_*

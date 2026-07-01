@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     try {
       if (message.startsWith("{")) {
         const parsed = JSON.parse(message);
-        queryText = parsed.text || message;
+        queryText = typeof parsed.text === "string" ? parsed.text : message;
         attachments = parsed.attachments || [];
         attachedImages = parsed.images || (parsed.image ? [parsed.image] : []);
       }
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       try {
         if (m.role === "user" && m.content.startsWith("{")) {
           const parsed = JSON.parse(m.content);
-          contentText = parsed.text || m.content;
+          contentText = typeof parsed.text === "string" ? parsed.text : m.content;
         }
       } catch (e) {}
 
@@ -157,14 +157,24 @@ export async function POST(req: NextRequest) {
             }
           }
         } else if (attachedImage.startsWith("http://") || attachedImage.startsWith("https://")) {
-          const ext = attachedImage.split(".").pop()?.toLowerCase();
-          const mimeType = ext === "png" ? "image/png" : "image/jpeg";
-          contents[contents.length - 1].parts.push({
-            fileData: {
-              fileUri: attachedImage,
-              mimeType: mimeType,
-            },
-          } as any);
+          try {
+            const imgRes = await fetch(attachedImage);
+            if (imgRes.ok) {
+              const arrayBuffer = await imgRes.arrayBuffer();
+              const base64Data = Buffer.from(arrayBuffer).toString("base64");
+              const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+              contents[contents.length - 1].parts.push({
+                inlineData: {
+                  mimeType: contentType,
+                  data: base64Data,
+                },
+              } as any);
+            } else {
+              console.warn(`[AI Chat Route] Failed to fetch image from R2: Status ${imgRes.status}`);
+            }
+          } catch (fetchErr: any) {
+            console.error("[AI Chat Route] Error fetching image from R2 URL:", fetchErr.message);
+          }
         }
       }
     }

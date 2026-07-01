@@ -181,6 +181,11 @@ export function AiCompanion({
     const file = e.clipboardData.files?.[0];
     if (file && file.type.startsWith("image/")) {
       e.preventDefault();
+      // Check size limit: 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size must be less than 5MB");
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setAttachedImages((prev) => [...prev, reader.result as string]);
@@ -196,6 +201,11 @@ export function AiCompanion({
 
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/")) {
+        // Check size limit: 5MB
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`Image "${file.name}" must be less than 5MB`);
+          return;
+        }
         const reader = new FileReader();
         reader.onloadend = () => {
           setAttachedImages((prev) => [...prev, reader.result as string]);
@@ -454,7 +464,7 @@ export function AiCompanion({
       if (m.content.startsWith("{")) {
         try {
           const parsed = JSON.parse(m.content);
-          text = parsed.text || m.content;
+          text = typeof parsed.text === "string" ? parsed.text : m.content;
           attachments = parsed.attachments || [];
           imgs = parsed.images || (parsed.image ? [parsed.image] : []);
         } catch (e) {
@@ -509,9 +519,11 @@ export function AiCompanion({
             )}
 
             {/* User message bubble */}
-            <div className="px-4 py-2.5 bg-slate-100 border border-slate-200/50 rounded-2xl rounded-tr-none text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
-              {text}
-            </div>
+            {text && (
+              <div className="px-4 py-2.5 bg-slate-100 border border-slate-200/50 rounded-2xl rounded-tr-none text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
+                {text}
+              </div>
+            )}
           </div>
         </div>
       );
