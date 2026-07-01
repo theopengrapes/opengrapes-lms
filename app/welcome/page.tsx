@@ -42,12 +42,12 @@ export default async function WelcomePage() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <form action={createBatchIntentAction}>
             <Button type="submit" size="lg" className="w-full">
-              As a Teacher
+              I'm a Teacher
             </Button>
           </form>
           <form action={joinBatchIntentAction}>
             <Button type="submit" variant="secondary" size="lg" className="w-full">
-              As a Student
+              I'm a Student
             </Button>
           </form>
         </div>
