@@ -127,7 +127,7 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-100 bg-white/70 backdrop-blur-sm md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-100 bg-white/70 backdrop-blur-sm md:flex sticky top-0 h-screen overflow-y-auto">
         {isHub ? (
           <HubSidebarContent
             variant={variant}
