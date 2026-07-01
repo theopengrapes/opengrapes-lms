@@ -14,10 +14,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { JoinBatchTrigger } from "@/components/join/JoinBatchTrigger";
 import { CopyJoinCode } from "@/components/ui/CopyJoinCode";
+import { ProfileDrawer } from "@/components/profile/ProfileDrawer";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -116,6 +118,7 @@ export function Sidebar({
   userEmail?: string | null;
 }) {
   const pathname = usePathname();
+  const [profileOpen, setProfileOpen] = useState(false);
   const hubPath = variant === "admin" ? "/admin" : "/student";
   const isInBatch = BATCH_NAV_ITEMS[variant].some(
     (item) => pathname === item.href || pathname.startsWith(item.href + "/")
@@ -123,27 +126,39 @@ export function Sidebar({
   const isHub = !isInBatch;
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-100 bg-white/70 backdrop-blur-sm md:flex">
-      {isHub ? (
-        <HubSidebarContent
-          variant={variant}
-          subtitle={subtitle}
-          pathname={pathname}
-          userName={userName}
-          userEmail={userEmail}
-        />
-      ) : (
-        <BatchSidebarContent
-          variant={variant}
-          hubPath={hubPath}
-          batchName={batchName}
-          joinCode={joinCode}
-          pathname={pathname}
-          userName={userName}
-          userEmail={userEmail}
-        />
-      )}
-    </aside>
+    <>
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-violet-100 bg-white/70 backdrop-blur-sm md:flex">
+        {isHub ? (
+          <HubSidebarContent
+            variant={variant}
+            subtitle={subtitle}
+            pathname={pathname}
+            userName={userName}
+            userEmail={userEmail}
+            onProfileClick={() => setProfileOpen(true)}
+          />
+        ) : (
+          <BatchSidebarContent
+            variant={variant}
+            hubPath={hubPath}
+            batchName={batchName}
+            joinCode={joinCode}
+            pathname={pathname}
+            userName={userName}
+            userEmail={userEmail}
+            onProfileClick={() => setProfileOpen(true)}
+          />
+        )}
+      </aside>
+
+      <ProfileDrawer
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        variant={variant}
+        userName={userName}
+        userEmail={userEmail}
+      />
+    </>
   );
 }
 
@@ -153,15 +168,16 @@ function HubSidebarContent({
   pathname,
   userName,
   userEmail,
+  onProfileClick,
 }: {
   variant: SidebarVariant;
   subtitle?: string;
   pathname: string;
   userName?: string | null;
   userEmail?: string | null;
+  onProfileClick: () => void;
 }) {
   const groups = HUB_NAV[variant];
-  const initials = getInitials(userName, userEmail);
 
   return (
     <div className="flex h-full flex-col px-5 py-6">
@@ -188,16 +204,31 @@ function HubSidebarContent({
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = isActive(pathname, item);
+              const itemClass = cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "bg-violet-100 font-semibold text-violet-700"
+                  : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
+              );
+
+              if (item.label === "Profile") {
+                return (
+                  <button
+                    key="profile"
+                    onClick={onProfileClick}
+                    className={cn(itemClass, "w-full text-left")}
+                  >
+                    <Icon className="size-[18px]" />
+                    {item.label}
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={item.href + item.label}
                   href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-violet-100 font-semibold text-violet-700"
-                      : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
-                  )}
+                  className={itemClass}
                 >
                   <Icon className="size-[18px]" />
                   {item.label}
@@ -209,7 +240,7 @@ function HubSidebarContent({
 
         <div className="flex-1" />
 
-        <ProfileCard userName={userName} userEmail={userEmail} showSignOut />
+        <ProfileCard userName={userName} userEmail={userEmail} showSignOut onProfileClick={onProfileClick} />
       </div>
     </div>
   );
@@ -219,31 +250,45 @@ function ProfileCard({
   userName,
   userEmail,
   showSignOut = false,
+  onProfileClick,
 }: {
   userName?: string | null;
   userEmail?: string | null;
   showSignOut?: boolean;
+  onProfileClick?: () => void;
 }) {
   const initials = getInitials(userName, userEmail);
 
+  const inner = (
+    <>
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-violet-600 to-violet-400 text-xs font-bold text-white">
+        {initials}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-[13px] font-semibold text-slate-700">
+          {userName ?? "User"}
+        </p>
+        {userEmail && (
+          <p className="truncate text-[11px] text-slate-400">{userEmail}</p>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div>
-      <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-400 text-xs font-bold text-white">
-          {initials}
+      {onProfileClick ? (
+        <button
+          onClick={onProfileClick}
+          className="flex w-full items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 text-left transition-colors hover:bg-violet-100/60"
+        >
+          {inner}
+        </button>
+      ) : (
+        <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5">
+          {inner}
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold text-slate-700">
-            {userName ?? "User"}
-          </p>
-          {userEmail && (
-            <p className="truncate text-[11px] text-slate-400">
-              {userEmail}
-            </p>
-          )}
-        </div>
-      </div>
-
+      )}
       {showSignOut && <SignOutButton size="sm" className="mt-2 w-full" />}
     </div>
   );
@@ -257,6 +302,7 @@ function BatchSidebarContent({
   pathname,
   userName,
   userEmail,
+  onProfileClick,
 }: {
   variant: SidebarVariant;
   hubPath: string;
@@ -265,6 +311,7 @@ function BatchSidebarContent({
   pathname: string;
   userName?: string | null;
   userEmail?: string | null;
+  onProfileClick: () => void;
 }) {
   const items = BATCH_NAV_ITEMS[variant];
 
@@ -329,7 +376,7 @@ function BatchSidebarContent({
         </div>
       )}
       <div className=" px-3 py-4">
-        <ProfileCard userName={userName} userEmail={userEmail} />
+        <ProfileCard userName={userName} userEmail={userEmail} onProfileClick={onProfileClick} />
       </div>
     </>
   );
