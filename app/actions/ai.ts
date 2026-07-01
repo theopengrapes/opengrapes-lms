@@ -38,7 +38,7 @@ export async function createConversationAction(batchId: string, firstMessage: st
   try {
     if (firstMessage.startsWith("{")) {
       const parsed = JSON.parse(firstMessage);
-      queryText = parsed.text || firstMessage;
+      queryText = typeof parsed.text === "string" ? parsed.text : firstMessage;
     }
   } catch (e) {}
 
@@ -50,7 +50,7 @@ export async function createConversationAction(batchId: string, firstMessage: st
         {
           parts: [
             {
-              text: `Summarize the following student/teacher query into a short, descriptive 3 to 4 word title for a chat sidebar. Return ONLY the title text, with no quotes, no markdown, and no extra text. Query: "${queryText}"`,
+              text: `Summarize the following student/teacher query into a short, descriptive 3 to 4 word title for a chat sidebar. Return ONLY the title text, with no quotes, no markdown, and no extra text. Query: "${queryText || "Image Attachment"}"`,
             },
           ],
         },
