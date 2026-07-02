@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { getSession } from "@/lib/session";
 import { getActiveStudentBatch } from "@/lib/batch";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, getEffectiveMeetingStatus } from "@/lib/utils";
 import { joinMeetingAction } from "@/app/actions/meeting";
 import { MeetingsList } from "@/components/student/MeetingsList";
 
@@ -28,24 +28,32 @@ export default async function StudentMeetingsPage() {
     ? await prisma.meeting.findUnique({ where: { id: liveSession.roomId } })
     : null;
 
-  // Get past meetings
-  const pastMeetings = await prisma.meeting.findMany({
-    where: {
-      batchId: batch.id,
-      status: "ENDED",
-      id: { not: liveSession?.roomId },
-    },
+  // Get all meetings for this batch
+  const meetings = await prisma.meeting.findMany({
+    where: { batchId: batch.id },
     orderBy: { date: "desc" },
   });
 
   // Get matching live sessions to check for MoM (meetingMinutes) and hasNotes
   const liveSessions = await prisma.liveSession.findMany({
     where: {
-      roomId: { in: pastMeetings.map((m) => m.id) }
+      roomId: { in: meetings.map((m) => m.id) }
     },
     include: {
       meetingMinutes: true
     }
+  });
+
+  const sessionMap = new Map(liveSessions.map((s) => [s.roomId, s]));
+
+  // Filter past meetings using getEffectiveMeetingStatus and session status
+  const pastMeetings = meetings.filter((m) => {
+    if (m.id === liveSession?.roomId) return false;
+
+    const session = sessionMap.get(m.id);
+    if (session && session.status !== "live") return true;
+
+    return getEffectiveMeetingStatus(m) === "ENDED";
   });
 
   return (

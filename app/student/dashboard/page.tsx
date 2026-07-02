@@ -14,6 +14,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { getSession } from "@/lib/session";
 import { getActiveStudentBatch } from "@/lib/batch";
 import { prisma } from "@/lib/prisma";
+import { joinMeetingAction } from "@/app/actions/meeting";
 import {
   formatDateTime,
   formatPaise,
@@ -47,7 +48,7 @@ export default async function StudentDashboardPage() {
 
   const studentId = session.user.id;
 
-  const [meetings, notes, tests, fee, payments] = await Promise.all([
+  const [meetings, notes, tests, fee, payments, liveSession] = await Promise.all([
     prisma.meeting.findMany({
       where: { batchId: batch.id },
       orderBy: { date: "asc" },
@@ -71,6 +72,9 @@ export default async function StudentDashboardPage() {
     prisma.payment.findMany({
       where: { studentId, batchId: batch.id },
     }),
+    prisma.liveSession.findFirst({
+      where: { batchId: batch.id, status: "live" },
+    }),
   ]);
 
   const upcomingMeetings = meetings.filter(
@@ -89,6 +93,7 @@ export default async function StudentDashboardPage() {
   const paidAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const outstanding = Math.max(totalAmount - paidAmount, 0);
   const feeStatus = getFeeStatus(totalAmount, paidAmount);
+  const isTeacherJoined = liveSession?.teacherJoined ?? false;
 
   return (
     <div className="space-y-6">
@@ -99,14 +104,44 @@ export default async function StudentDashboardPage() {
           <p className="mt-1 text-sm text-slate-500">{batch.grade}</p>
         )}
         </div>
-        {/*baad mein, use state daaldegne, if meeting session active then hi yeh button dikhayi dega*/}
-        <button 
-        type="button"
-        aria-label="Join current meeting"
-        className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white  shadow-md shadow-violet-200/50 transition-all duratoin-200 ease-out hover:-translate-y-0.5 hover;bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70 active:translate-y-0 cursor-pointer">
-          <Video className="size-4" />
-          <span className="hidden sm:inline">Join Meeting</span>
-        </button>
+        {liveSession ? (
+          isTeacherJoined ? (
+            <form action={joinMeetingAction.bind(null, liveSession.roomId)}>
+              <button
+                type="submit"
+                aria-label="Join current meeting"
+                className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-emerald-200/50 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200/70 active:translate-y-0 cursor-pointer"
+              >
+                <Video className="size-4" />
+                <span className="hidden sm:inline">Join Meeting</span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              disabled
+              aria-label="Waiting for teacher to join class"
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-700 shadow-sm transition-all duration-200 ease-out cursor-not-allowed animate-pulse"
+            >
+              <Video className="size-4 animate-bounce" />
+              <span>Waiting for teacher...</span>
+            </button>
+          )
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-label="No active meeting at this time"
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-400 border border-slate-200 shadow-inner cursor-not-allowed"
+          >
+            <Video className="size-4" />
+            <span>No active class</span>
+          </button>
+        )}
         
       </div>
 

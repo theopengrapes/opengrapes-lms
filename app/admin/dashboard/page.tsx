@@ -14,6 +14,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { getSession } from "@/lib/session";
 import { getActiveBatch } from "@/lib/batch";
 import { prisma } from "@/lib/prisma";
+import { startClassAction } from "@/app/actions/meeting";
 import {
   formatDateTime,
   formatPaise,
@@ -27,7 +28,7 @@ export default async function AdminDashboardPage() {
   const batch = await getActiveBatch(session);
   if (!batch) redirect("/admin");
 
-  const [enrollments, meetings, notes, tests, fees, payments] =
+  const [enrollments, meetings, notes, tests, fees, payments, liveSession] =
     await Promise.all([
       prisma.enrollment.findMany({
         where: { batchId: batch.id },
@@ -53,6 +54,9 @@ export default async function AdminDashboardPage() {
       }),
       prisma.payment.findMany({
         where: { batchId: batch.id },
+      }),
+      prisma.liveSession.findFirst({
+        where: { batchId: batch.id, status: "live" },
       }),
     ]);
 
@@ -107,15 +111,28 @@ export default async function AdminDashboardPage() {
             </span>
           </p>
         </div>
-        {/* TODO: wire up instant meeting */}
-        <button
-          type="button"
-          aria-label="Start instant meeting"
-          className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-violet-200/50 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70 active:translate-y-0 cursor-pointer"
-        >
-          <Video className="size-4" />
-          <span className="hidden sm:inline">Start meeting</span>
-        </button>
+        <form action={startClassAction.bind(null, batch.id)}>
+          <button
+            type="submit"
+            aria-label={liveSession ? "Rejoin class session" : "Start instant class session"}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-md transition-all duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
+              liveSession
+                ? "bg-emerald-600 shadow-emerald-250/50 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-200/70"
+                : "bg-violet-600 shadow-violet-200/50 hover:bg-violet-700 hover:shadow-lg hover:shadow-violet-200/70"
+            }`}
+          >
+            <Video className="size-4" />
+            <span className="hidden sm:inline">
+              {liveSession ? "Rejoin meeting" : "Start meeting"}
+            </span>
+            {liveSession && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+            )}
+          </button>
+        </form>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ClipboardList, FileDown } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { formatDateTime } from "@/lib/utils";
@@ -133,8 +135,32 @@ export function MeetingsList({ meetings, liveSessions }: MeetingsListProps) {
       >
         {activeMoM && (
           <div className="space-y-4">
-            <div className="text-sm text-slate-650 leading-relaxed whitespace-pre-wrap bg-slate-50/50 p-4 border border-slate-100 rounded-xl max-h-[60vh] overflow-y-auto scrollbar-thin">
-              {activeMoM.content}
+            <div className="text-sm leading-relaxed bg-slate-50/50 p-6 border border-slate-100 rounded-xl max-h-[60vh] overflow-y-auto scrollbar-thin">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ children }) => <h1 className="text-lg font-bold text-violet-750 border-b border-violet-100/50 pb-1 mt-4 mb-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-base font-semibold text-slate-800 mt-3 mb-1.5">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-semibold text-slate-700 mt-2 mb-1">{children}</h3>,
+                  p: ({ children }) => <p className="text-sm leading-relaxed text-slate-600 my-2">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-2 text-slate-650 text-sm">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-2 text-slate-650 text-sm">{children}</ol>,
+                  li: ({ children }) => <li className="pl-1">{children}</li>,
+                  strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-3 rounded-lg border border-slate-200">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm text-left">{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => <thead className="bg-slate-50 text-slate-700 font-semibold">{children}</thead>,
+                  tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
+                  tr: ({ children }) => <tr className="hover:bg-slate-50/30">{children}</tr>,
+                  th: ({ children }) => <th className="px-3 py-2 border-b border-slate-200 font-bold">{children}</th>,
+                  td: ({ children }) => <td className="px-3 py-2 text-slate-600">{children}</td>,
+                }}
+              >
+                {activeMoM.content}
+              </ReactMarkdown>
             </div>
           </div>
         )}
