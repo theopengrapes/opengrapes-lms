@@ -33,29 +33,17 @@ export function LandingFeatures() {
                 </div>
               </div>
               <div className="wb-mock">
-                <div
-                  className="wb-write eq"
-                  style={{ left: "11%", top: "24%" }}
-                >
+                <div className="wb-write eq">
                   x² – 5x + 6 = 0
                 </div>
-                <div
-                  className="wb-write roots"
-                  style={{ left: "20%", top: "54%" }}
-                >
+                <div className="wb-write roots">
                   x = 2 ,&nbsp; x = 3
                 </div>
-                <div
-                  className="wb-cursor p"
-                  style={{ left: "60%", top: "22%" }}
-                >
+                <div className="wb-cursor p">
                   <i data-lucide="mouse-pointer-2" />
                   <span>Mr.Manas</span>
                 </div>
-                <div
-                  className="wb-cursor g"
-                  style={{ left: "56%", top: "52%" }}
-                >
+                <div className="wb-cursor g">
                   <i data-lucide="mouse-pointer-2" />
                   <span>Rohit</span>
                 </div>

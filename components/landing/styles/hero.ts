@@ -29,10 +29,11 @@ export const heroStyles = css`
   .mock-board svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .mock-board .bd-write { position: absolute; z-index: 1; font-family: 'Caveat', cursive; font-weight: 700;
     line-height: 1; white-space: nowrap; }
-  .mock-board .bd-write.q { color: var(--plum-600); font-size: 18px; transform: rotate(-2deg); white-space: normal; max-width: 56%; line-height: 1.28; }
-  .mock-board .bd-write.a { color: var(--sage-700); font-size: 23px; transform: rotate(-1deg); }
-  .cursor { position: absolute; display: flex; align-items: flex-start; gap: 4px; font-family: var(--font-mono); font-size: 9px; }
+  .mock-board .bd-write.q { left: 7%; top: 10%; color: var(--plum-600); font-size: 18px; transform: rotate(-2deg); white-space: normal; max-width: 56%; line-height: 1.28; }
+  .mock-board .bd-write.a { left: 6.5%; top: 37%; color: var(--sage-700); font-size: 23px; transform: rotate(-1deg); }
+  .cursor { position: absolute; left: 70%; top: 12%; display: flex; align-items: flex-start; gap: 4px; font-family: var(--font-mono); font-size: 9px; }
   .cursor span { background: var(--plum-500); color: #fff; padding: 1px 5px; border-radius: 7px; margin-top: 8px; transform: translateX(-2px); }
+  .cursor.green { left: 45%; top: 40%; }
   .cursor.green span { background: var(--sage-600); }
   .cursor svg { width: 13px; height: 13px; }
   .mock-teacher { position: absolute; right: 13px; bottom: 13px; width: 96px; height: 64px; border-radius: 9px;

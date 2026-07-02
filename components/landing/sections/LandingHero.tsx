@@ -42,29 +42,17 @@ export function LandingHero() {
             <div className="mock-screen">
               <div className="mock-stage">
                 <div className="mock-board">
-                  <div
-                    className="bd-write q"
-                    style={{ left: "7%", top: "10%" }}
-                  >
+                  <div className="bd-write q">
                     Q: A train covers 240 km in 3 hours. Find its speed.
                   </div>
-                  <div
-                    className="bd-write a"
-                    style={{ left: "6.5%", top: "37%" }}
-                  >
+                  <div className="bd-write a">
                     = 80 km/h
                   </div>
-                  <div
-                    className="cursor"
-                    style={{ left: "70%", top: "12%" }}
-                  >
+                  <div className="cursor">
                     <i data-lucide="mouse-pointer-2" />
                     <span>Ms.Iyer</span>
                   </div>
-                  <div
-                    className="cursor green"
-                    style={{ left: "45%", top: "40%" }}
-                  >
+                  <div className="cursor green">
                     <i data-lucide="mouse-pointer-2" />
                     <span>Anya</span>
                   </div>

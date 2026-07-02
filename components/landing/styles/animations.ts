@@ -116,5 +116,35 @@ export const animationStyles = css`
     .spy-head .eyebrow { display: block; margin-bottom: 4px; }
     .foot { grid-template-columns: 1fr 1fr; } .nav-links { display: none; }
   }
+
+  /* ---- Phone: whiteboard mocks need their own layout, not just a smaller canvas ----
+     Fixed px handwriting sizes + percentage-based left/top were tuned for wide desktop
+     mocks; on phone widths the same text wraps/overflows into the cursor tags and the
+     face/tile art, so phone gets its own font-size + position values instead of a
+     naive scale-down. */
+  @media (max-width: 560px) {
+    /* Hero product mock */
+    .mock-screen { grid-template-columns: 1fr 46px; height: 260px; }
+    .mock-stage { padding: 10px; gap: 8px; }
+    .mock-board .bd-write.q { top: 7%; max-width: 74%; font-size: 13px; line-height: 1.3; }
+    .mock-board .bd-write.a { top: 48%; font-size: 17px; }
+    .cursor { top: 30%; left: 62%; }
+    .cursor.green { top: 66%; left: 38%; }
+    .mock-teacher { width: 62px; height: 42px; right: 8px; bottom: 8px; }
+    .mock-teacher b { font-size: 7px; }
+    .mock-rail { padding: 6px 5px; gap: 5px; }
+    .tile { height: 34px; }
+
+    /* Features "Seamless collaborative whiteboard" tile */
+    .wb-mock { min-height: 210px; }
+    .wb-write { font-size: 15px; }
+    .wb-write.eq { top: 10%; left: 6%; }
+    .wb-write.roots { top: 42%; left: 6%; }
+    .wb-cursor.p { top: 24%; left: auto; right: 6%; }
+    .wb-cursor.g { top: 58%; left: auto; right: 6%; }
+    .wb-cursor span { font-size: 9px; }
+    .wb-face { width: 52px; height: 36px; right: 8px; bottom: 8px; }
+    .wb-face b { font-size: 6.5px; }
+  }
   body.no-anim .reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
 `;

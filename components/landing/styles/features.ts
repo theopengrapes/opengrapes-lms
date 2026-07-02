@@ -43,14 +43,14 @@ export const featuresStyles = css`
   .wb-mock .wb-ink { position: absolute; inset: 0; width: 100%; height: 100%; }
   .wb-write { position: absolute; z-index: 1; font-family: 'Caveat', cursive; font-weight: 700;
     font-size: 30px; line-height: 1; white-space: nowrap; letter-spacing: .01em; }
-  .wb-write.eq { color: var(--plum-600); transform: rotate(-2.5deg); }
-  .wb-write.roots { color: var(--sage-700); transform: rotate(-1.5deg); }
+  .wb-write.eq { left: 11%; top: 24%; color: var(--plum-600); transform: rotate(-2.5deg); }
+  .wb-write.roots { left: 20%; top: 54%; color: var(--sage-700); transform: rotate(-1.5deg); }
   .wb-cursor { position: absolute; display: flex; align-items: flex-start; gap: 4px;
     font-family: var(--font-mono); font-size: 10px; z-index: 2; }
   .wb-cursor i, .wb-cursor svg { width: 15px; height: 15px; }
-  .wb-cursor span { color: #fff; padding: 1px 6px; border-radius: 7px; margin-top: 9px; transform: translateX(-2px); }
-  .wb-cursor.g { color: var(--sage-600); } .wb-cursor.g span { background: var(--sage-600); }
-  .wb-cursor.p { color: var(--plum-500); } .wb-cursor.p span { background: var(--plum-500); }
+  .wb-cursor span { color: #fff; padding: 1px 6px; border-radius: 7px; margin-top: 9px; transform: translateX(-2px); white-space: nowrap; }
+  .wb-cursor.g { left: 56%; top: 52%; color: var(--sage-600); } .wb-cursor.g span { background: var(--sage-600); }
+  .wb-cursor.p { left: 60%; top: 22%; color: var(--plum-500); } .wb-cursor.p span { background: var(--plum-500); }
   .wb-face { position: absolute; right: 14px; bottom: 14px; width: 92px; height: 60px; border-radius: 9px;
     background: linear-gradient(140deg, var(--plum-200), var(--sage-200)); border: 2px solid var(--cream-50);
     box-shadow: var(--shadow-sm); display: flex; align-items: flex-end; padding: 5px; }
