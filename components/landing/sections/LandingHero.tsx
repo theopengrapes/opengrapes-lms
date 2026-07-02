@@ -15,7 +15,7 @@ export function LandingHero() {
           </h1>
           <p className="lede reveal d2" id="heroLede">
             A live classroom, a shared whiteboard, and an AI that remembers
-            every session — one calm place for teachers to teach and students to
+            every session, one calm place for teachers to teach and students to
             never miss a thing.
           </p>
           <div className="hero-cta reveal d3">
