@@ -116,38 +116,5 @@ export const animationStyles = css`
     .spy-head .eyebrow { display: block; margin-bottom: 4px; }
     .foot { grid-template-columns: 1fr 1fr; } .nav-links { display: none; }
   }
-
-
-  #tweaks { position: fixed; right: 20px; bottom: 20px; z-index: 200; width: 280px;
-    background: var(--cream-50); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg); font-family: var(--font-body); display: none; overflow: hidden; }
-  #tweaks.open { display: block; }
-  #tweaks .tk-head { display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px; border-bottom: 1px solid var(--border-hair); }
-  #tweaks .tk-head b { font-family: var(--font-display); font-size: 17px; color: var(--ink-900); font-weight: 500; }
-  #tweaks .tk-x { cursor: pointer; border: none; background: transparent; color: var(--ink-500);
-    font-size: 18px; line-height: 1; padding: 4px; border-radius: 6px; }
-  #tweaks .tk-x:hover { background: var(--cream-200); color: var(--ink-900); }
-  #tweaks .tk-body { padding: 16px; display: flex; flex-direction: column; gap: 18px; }
-  #tweaks .tk-row .tk-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em;
-    text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; }
-  #tweaks .seg { display: flex; gap: 4px; background: var(--cream-200); padding: 3px; border-radius: var(--radius-pill); }
-  #tweaks .seg button { flex: 1; border: none; background: transparent; cursor: pointer; font-family: var(--font-body);
-    font-size: 12.5px; font-weight: 500; color: var(--ink-500); padding: 7px 6px; border-radius: var(--radius-pill);
-    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
-  #tweaks .seg button[aria-pressed="true"] { background: var(--cream-50); color: var(--ink-900); box-shadow: var(--shadow-xs); }
-  #tweaks .sw-row { display: flex; gap: 10px; }
-  #tweaks .sw { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
-    box-shadow: var(--shadow-xs); transition: transform var(--dur-fast) var(--ease-out); }
-  #tweaks .sw:hover { transform: scale(1.08); }
-  #tweaks .sw[aria-pressed="true"] { border-color: var(--ink-900); }
-  #tweaks .tog { display: flex; align-items: center; justify-content: space-between; }
-  #tweaks .tog span { font-size: 13.5px; color: var(--ink-700); }
-  #tweaks .switch { width: 42px; height: 24px; border-radius: 999px; background: var(--cream-300); border: none;
-    cursor: pointer; position: relative; transition: background var(--dur-fast) var(--ease-out); }
-  #tweaks .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
-    border-radius: 50%; background: var(--cream-50); box-shadow: var(--shadow-xs); transition: transform var(--dur-fast) var(--ease-out); }
-  #tweaks .switch[aria-pressed="true"] { background: var(--accent-green); }
-  #tweaks .switch[aria-pressed="true"]::after { transform: translateX(18px); }
   body.no-anim .reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
 `;

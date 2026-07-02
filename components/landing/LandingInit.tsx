@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { mainScript } from "./scripts/main";
-import { tweaksScript } from "./scripts/tweaks";
 
 export function LandingInit() {
   useEffect(() => {
@@ -12,10 +11,6 @@ export function LandingInit() {
       const s1 = document.createElement("script");
       s1.textContent = mainScript;
       document.body.appendChild(s1);
-
-      const s2 = document.createElement("script");
-      s2.textContent = tweaksScript;
-      document.body.appendChild(s2);
     };
     document.head.appendChild(lucide);
 

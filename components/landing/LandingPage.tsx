@@ -8,8 +8,6 @@ import { LandingHowItWorks } from "./sections/LandingHowItWorks";
 import { LandingPlatform } from "./sections/LandingPlatform";
 import { LandingCTA } from "./sections/LandingCTA";
 import { LandingFooter } from "./sections/LandingFooter";
-import { LandingTweaks } from "./sections/LandingTweaks";
-
 export function LandingPage() {
   return (
     <>
@@ -24,9 +22,8 @@ export function LandingPage() {
       <LandingPlatform />
       <LandingCTA />
       <LandingFooter />
-      <LandingTweaks />
 
-      {/* Loads Lucide icons + runs scroll/animation/tweaks scripts on the client */}
+      {/* Loads Lucide icons + runs scroll/animation scripts on the client */}
       <LandingInit />
     </>
   );

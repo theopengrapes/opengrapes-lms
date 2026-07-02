@@ -458,8 +458,8 @@ export const baseStyles = css`
   --text-muted:     var(--ink-500);
   --text-faint:     var(--ink-300);
 
-  --accent-green:   var(--sage-500);
-  --accent-green-deep: var(--sage-700);
+  --accent-green:   var(--plum-500);
+  --accent-green-deep: var(--plum-700);
   --accent-purple:  var(--plum-500);
   --accent-purple-deep: var(--plum-700);
 
