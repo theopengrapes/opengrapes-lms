@@ -1,7 +1,7 @@
 export const mainScript = `
   lucide.createIcons();
   // Fast smooth scroll for nav anchor links (~600 ms, ease-in-out)
-  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+  document.querySelectorAll('a[href^="#"]:not(.spy-link)').forEach(function(a) {
     a.addEventListener('click', function(e) {
       const id = a.getAttribute('href').slice(1);
       const target = document.getElementById(id);
@@ -119,7 +119,7 @@ export const mainScript = `
   const spyFill = document.querySelector('.spy-progress-fill');
   if (spyPin && spyPanels.length) {
     const N = spyPanels.length;
-    let spyActive = -1, pinning = null;
+    let spyActive = -1, railActive = -1, pinning = null;
 
     function setSpy(idx) {
       idx = Math.max(0, Math.min(N - 1, idx));
@@ -127,6 +127,22 @@ export const mainScript = `
       spyActive = idx;
       spyPanels.forEach((p, i) => p.classList.toggle('is-active', i === idx));
       spyLinks.forEach((l, i) => l.classList.toggle('is-active', i === idx));
+    }
+    // Non-pinned mode: panels stay in normal flow and stay fully visible, but the
+    // rail heading should still highlight whichever group is currently in view.
+    function setRailActive(idx) {
+      idx = Math.max(0, Math.min(N - 1, idx));
+      if (idx === railActive) return;
+      railActive = idx;
+      spyLinks.forEach((l, i) => l.classList.toggle('is-active', i === idx));
+    }
+    function nearestPanel() {
+      const refY = 140;
+      let idx = 0;
+      for (let i = 0; i < spyPanels.length; i++) {
+        if (spyPanels[i].getBoundingClientRect().top <= refY) idx = i; else break;
+      }
+      return idx;
     }
     function setFill(progress) {
       if (spyFill) spyFill.style.transform = 'translateY(' + (progress * (N - 1) * 100) + '%)';
@@ -138,12 +154,12 @@ export const mainScript = `
       if (allow === pinning) return;
       pinning = allow;
       spyPin.classList.toggle('is-pinning', allow);
-      if (!allow) { spyPanels.forEach(p => p.classList.add('is-active')); setFill(0); }
+      if (!allow) { spyPanels.forEach(p => p.classList.add('is-active')); setFill(0); railActive = -1; setRailActive(nearestPanel()); }
       else { setSpy(0); }
     }
 
     function spyScan() {
-      if (!pinning) return;
+      if (!pinning) { setRailActive(nearestPanel()); return; }
       const total = spyPin.offsetHeight - window.innerHeight;
       if (total <= 0) return;
       const scrolled = Math.min(Math.max(-spyPin.getBoundingClientRect().top, 0), total);
@@ -155,7 +171,7 @@ export const mainScript = `
     // Rail clicks jump to that group's segment within the pin
     spyLinks.forEach((l, i) => l.addEventListener('click', e => {
       e.preventDefault();
-      if (!pinning) { const t = document.getElementById(l.dataset.target);
+      if (!pinning) { setRailActive(i); const t = document.getElementById(l.dataset.target);
         if (t) window.scrollTo({ top: window.scrollY + t.getBoundingClientRect().top - 116, behavior: 'smooth' }); return; }
       const total = spyPin.offsetHeight - window.innerHeight;
       const pinTop = window.scrollY + spyPin.getBoundingClientRect().top;

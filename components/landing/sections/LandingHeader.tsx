@@ -7,9 +7,8 @@ export function LandingHeader() {
         <div className="brand">OpenGrapes</div>
         <nav className="nav-links">
           <a href="#features">Features</a>
-          <a href="#ai">AI</a>
           <a href="#how">How it works</a>
-          <a href="#lms">Platform</a>
+          <a href="#ai">Platform</a>
         </nav>
         <div className="nav-actions">
           <form action={googleSignInAction}>
